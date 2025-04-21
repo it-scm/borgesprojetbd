@@ -1,0 +1,64 @@
+# Maven
+/target/
+!.mvn/wrapper/maven-wrapper.jar
+**/logs/
+**/*.log
+.mvn/timing.properties
+
+# IntelliJ IDEA
+.idea/
+*.iml
+*.iws
+*.ipr
+out/
+
+# Eclipse
+.project
+.classpath
+.settings/
+.apt_generated/
+.factorypath
+.springBeans
+
+# VS Code
+.vscode/
+
+# OS files
+.DS_Store
+Thumbs.db
+
+# Docker
+**/*.bak
+**/.dockerignore
+**/.env
+**/docker-compose.override.yml
+**/.container-logs/
+
+# Node/npm (if using frontend with Thymeleaf)
+/frontend/node_modules/
+/frontend/dist/
+/frontend/.angular/
+
+# Optional: ignore test reports
+**/surefire-reports/
+**/jacoco.exec
+
+# Logs
+*.log
+logs/
+spring.log
+
+# Temp files
+*.swp
+*.tmp
+*.temp
+*~
+
+# Git merge conflict leftovers
+*.orig
+
+# Keep config files
+!docker-compose.yml
+!Dockerfile
+!src/main/resources/application.yml
+!src/main/resources/application.properties
