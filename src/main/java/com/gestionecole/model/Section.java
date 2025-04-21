@@ -32,4 +32,9 @@ public class Section {
         this.nom = nom;
         this.nbPlaces = nbPlaces;
     }
+
+    @Override
+    public String toString() {
+        return "Section(nom=" + nom + ", nbPlaces=" + nbPlaces + ")";
+    }
 }

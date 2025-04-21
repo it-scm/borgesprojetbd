@@ -1,105 +1,50 @@
 package com.gestionecole.controller;
 
-import com.gestionecole.model.Cours;
+import com.gestionecole.GestionScolaireApplication;
 import com.gestionecole.model.Etudiant;
 import com.gestionecole.model.Professeur;
 import com.gestionecole.model.Section;
 import com.gestionecole.repository.*;
 import jakarta.persistence.EntityManager;
-import jakarta.transaction.Transactional;
 import org.hamcrest.Matchers;
-import org.junit.jupiter.api.BeforeAll;
 import org.junit.jupiter.api.Test;
-import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import java.util.List;
-
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest
+@SpringBootTest(classes = {GestionScolaireApplication.class})
 @AutoConfigureMockMvc
 @ActiveProfiles("test")
-@Transactional
-@TestInstance(TestInstance.Lifecycle.PER_CLASS)
+@EntityScan(basePackages = "com.gestionecole.model")
 class AuthControllerTest {
 
-    @Autowired
-    private MockMvc mockMvc;
+    @Autowired private MockMvc mockMvc;
+    @Autowired private EntityManager entityManager;
 
-    @Autowired
-    private EntityManager entityManager;
-
-
-    @Autowired
-    private UtilisateurRepository utilisateurRepository;
-
-    @Autowired private PasswordEncoder passwordEncoder;
-
+    @Autowired private UtilisateurRepository utilisateurRepository;
     @Autowired private CoursRepository coursRepository;
-    @Autowired
-    private EtudiantRepository etudiantRepository;
-    @Autowired
-    private ProfesseurRepository professeurRepository;
-
-    @Autowired  private SectionRepository sectionRepository;
-
-    @BeforeAll
-    void setupUsers() {
-        // Supprimer d'abord les dépendances (cours) pour respecter les contraintes de clé étrangère
-        coursRepository.deleteAll();
-        etudiantRepository.deleteAll();
-        professeurRepository.deleteAll();
-
-        // Création du professeur
-        Professeur prof = new Professeur();
-        prof.setNom("Jean");
-        prof.setPrenom("Professeur");
-        prof.setEmail("professeur@ecole.be");
-        prof.setPassword(passwordEncoder.encode("professeur123"));
-        prof.setRole("ROLE_PROFESSEUR");
-        prof.setMatricule("ABC123");
-        professeurRepository.save(prof);
-
-        // Création de cours associés au professeur
-        Cours cours1 = new Cours("CYB101", "Introduction à la cybersécurité", 5, "Principes de base", prof);
-        Cours cours2 = new Cours("TEL202", "Télécoms avancés", 6, "Réseaux avancés", prof);
-        coursRepository.saveAll(List.of(cours1, cours2));
-
-        Section cyber = new Section();
-        cyber.setNom("Cyber");
-        cyber.setNbPlaces(30);
-        sectionRepository.save(cyber);
-
-        Etudiant etu = new Etudiant();
-        etu.setNom("Etudiant");
-        etu.setPrenom("Inscrit");
-        etu.setEmail("etudiant.inscrit@ecole.be");
-        etu.setPassword(passwordEncoder.encode("etudiant123"));
-        etu.setRole("ROLE_ETUDIANT");
-        etu.setSection(cyber); // ⚠️ Avant le save
-        etudiantRepository.save(etu);
-
-
-    }
-
-
+    @Autowired private EtudiantRepository etudiantRepository;
+    @Autowired private ProfesseurRepository professeurRepository;
+    @Autowired private SectionRepository sectionRepository;
+    @Autowired private PasswordEncoder passwordEncoder;
+    @Autowired private HoraireRepository horaireRepository;
+    @Autowired private JdbcTemplate jdbcTemplate;
 
     @Test
     void testJpaContext() {
         assertNotNull(entityManager);
     }
-
 
     @Test
     void testPageLoginAccessible() throws Exception {
@@ -109,10 +54,34 @@ class AuthControllerTest {
                 .andExpect(content().string(Matchers.containsString("form")));
     }
 
+    @Test
+    void testListTables() {
+        jdbcTemplate.query(
+                "SELECT table_name FROM INFORMATION_SCHEMA.TABLES WHERE table_schema = 'PUBLIC'",
+                (rs) -> {
+                    System.out.println("==== DATABASE TABLES ====");
+                    while (rs.next()) {
+                        System.out.println(rs.getString("table_name"));
+                    }
+                    System.out.println("=========================");
+                }
+        );
+    }
+
 
     @Test
     void testRedirectionEtudiantInscrit() throws Exception {
-        assertTrue(etudiantRepository.findByEmail("etudiant.inscrit@ecole.be").isPresent());
+        Section section = new Section("Cyber", 30);
+        sectionRepository.save(section);
+
+        Etudiant etudiant = new Etudiant();
+        etudiant.setNom("Etudiant");
+        etudiant.setPrenom("Inscrit");
+        etudiant.setEmail("etudiant.inscrit@ecole.be");
+        etudiant.setPassword(passwordEncoder.encode("etudiant123"));
+        etudiant.setRole("ROLE_ETUDIANT");
+        etudiant.setSection(section);
+        etudiantRepository.save(etudiant);
 
         mockMvc.perform(formLogin("/auth/login")
                         .user("etudiant.inscrit@ecole.be")
@@ -120,4 +89,56 @@ class AuthControllerTest {
                 .andExpect(authenticated().withUsername("etudiant.inscrit@ecole.be"))
                 .andExpect(redirectedUrl("/etudiant/cours"));
     }
+
+    @Test
+    void testRedirectionEtudiantNonInscrit() throws Exception {
+        Etudiant etudiant = new Etudiant();
+        etudiant.setNom("Etudiant");
+        etudiant.setPrenom("NonInscrit");
+        etudiant.setEmail("etudiant.noninscrit@ecole.be");
+        etudiant.setPassword(passwordEncoder.encode("etudiant123"));
+        etudiant.setRole("ROLE_ETUDIANT");
+        etudiant.setSection(null);
+        etudiantRepository.save(etudiant);
+
+        mockMvc.perform(formLogin("/auth/login")
+                        .user("etudiant.noninscrit@ecole.be")
+                        .password("etudiant123"))
+                .andExpect(authenticated().withUsername("etudiant.noninscrit@ecole.be"))
+                .andExpect(redirectedUrl("/register"));
+    }
+
+    @Test
+    void testRedirectionProfesseurAfterLogin() throws Exception {
+        Professeur prof = new Professeur();
+        prof.setNom("Jean");
+        prof.setPrenom("Professeur");
+        prof.setEmail("professeur@ecole.be");
+        prof.setPassword(passwordEncoder.encode("professeur123"));
+        prof.setRole("ROLE_PROFESSEUR");
+        prof.setMatricule("ABC123");
+        professeurRepository.save(prof);
+
+        mockMvc.perform(formLogin("/auth/login")
+                        .user("professeur@ecole.be")
+                        .password("professeur123"))
+                .andExpect(authenticated().withUsername("professeur@ecole.be"))
+                .andExpect(redirectedUrl("/professeur/cours"));
+    }
+
+    @Test
+    void testLienInscriptionPresentSurLoginPage() throws Exception {
+        mockMvc.perform(get("/auth/login"))
+                .andExpect(status().isOk())
+                .andExpect(content().string(Matchers.containsString("href=\"/auth/register\"")));
+    }
+
+    @Test
+    void testLoginInvalideRedirigeVersErreur() throws Exception {
+        mockMvc.perform(formLogin("/auth/login")
+                        .user("email-inexistant@ecole.be")
+                        .password("motdepasseincorrect"))
+                .andExpect(redirectedUrl("/auth/login?error=true"));
+    }
 }
+

@@ -24,4 +24,10 @@ public class Note {
     @ManyToOne
     @JoinColumn(name = "cours_id")
     private Cours cours;
+
+    @Override
+    public String toString() {
+        return "Note(premiereSession=" + getPremiereSession() +
+                ", deuxiemeSession=" + getDeuxiemeSession() + ")";
+    }
 }

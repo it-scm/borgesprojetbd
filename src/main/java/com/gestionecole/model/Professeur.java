@@ -18,4 +18,9 @@ public class Professeur extends Utilisateur {
     private List<Cours> cours;
 
     private String matricule;
+
+    @Override
+    public String toString() {
+        return "Professeur(nom=" + getNom() + ", email=" + getEmail() + ")";
+    }
 }

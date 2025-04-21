@@ -1,9 +1,10 @@
 package com.gestionecole.model;
 
-import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import jakarta.persistence.Entity;
+import jakarta.persistence.JoinColumn;
+import jakarta.persistence.ManyToOne;
+import jakarta.persistence.OneToMany;
+import lombok.*;
 
 import java.util.List;
 
@@ -28,11 +29,16 @@ public class Etudiant extends Utilisateur {
     private AnneeSection anneeSection;
 
     private String info;
-
     private String photo;
 
     public boolean isInscrit() {
         return this.section != null;
     }
 
+    @Override
+    public String toString() {
+        return "Etudiant(nom=" + getNom() +
+                ", prenom=" + getPrenom() +
+                ", email=" + getEmail() + ")";
+    }
 }
