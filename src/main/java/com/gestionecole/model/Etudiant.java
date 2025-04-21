@@ -30,4 +30,9 @@ public class Etudiant extends Utilisateur {
     private String info;
 
     private String photo;
+
+    public boolean isInscrit() {
+        return this.section != null;
+    }
+
 }
