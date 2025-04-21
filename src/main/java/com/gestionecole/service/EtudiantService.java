@@ -37,6 +37,12 @@ public class EtudiantService {
         return etudiantRepository.findByEmail(email);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Etudiant> getEtudiantWithSectionByEmail(String email) {
+        return etudiantRepository.findWithSectionByEmail(email);
+    }
+
+
     public boolean isEtudiantInscrit(String email) {
         return etudiantRepository.findByEmail(email)
                 .map(Etudiant::isInscrit)

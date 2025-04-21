@@ -20,8 +20,12 @@ public class SecurityConfig {
 
     private final UtilisateurDetailsService utilisateurDetailsService;
 
-    public SecurityConfig(UtilisateurDetailsService utilisateurDetailsService) {
+    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+
+    public SecurityConfig(UtilisateurDetailsService utilisateurDetailsService,
+                          CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler) {
         this.utilisateurDetailsService = utilisateurDetailsService;
+        this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
     }
 
     @Bean
@@ -50,16 +54,7 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .loginPage("/auth/login")
-                        .successHandler((request, response, authentication) -> {
-                            String role = authentication.getAuthorities().iterator().next().getAuthority();
-                            if (role.equals("ROLE_ETUDIANT")) {
-                                response.sendRedirect("/etudiant/cours");
-                            } else if (role.equals("ROLE_PROFESSEUR")) {
-                                response.sendRedirect("/professeur/cours");
-                            } else {
-                                response.sendRedirect("/home");
-                            }
-                        })
+                        .successHandler(customAuthenticationSuccessHandler)
                         .permitAll()
                 )
 

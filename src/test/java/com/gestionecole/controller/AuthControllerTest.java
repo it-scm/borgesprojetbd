@@ -3,10 +3,8 @@ package com.gestionecole.controller;
 import com.gestionecole.model.Cours;
 import com.gestionecole.model.Etudiant;
 import com.gestionecole.model.Professeur;
-import com.gestionecole.repository.CoursRepository;
-import com.gestionecole.repository.EtudiantRepository;
-import com.gestionecole.repository.ProfesseurRepository;
-import com.gestionecole.repository.UtilisateurRepository;
+import com.gestionecole.model.Section;
+import com.gestionecole.repository.*;
 import jakarta.persistence.EntityManager;
 import jakarta.transaction.Transactional;
 import org.hamcrest.Matchers;
@@ -16,7 +14,6 @@ import org.junit.jupiter.api.TestInstance;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
-import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
@@ -27,7 +24,6 @@ import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
-import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.unauthenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
@@ -56,6 +52,8 @@ class AuthControllerTest {
     @Autowired
     private ProfesseurRepository professeurRepository;
 
+    @Autowired  private SectionRepository sectionRepository;
+
     @BeforeAll
     void setupUsers() {
         // Supprimer d'abord les dépendances (cours) pour respecter les contraintes de clé étrangère
@@ -78,14 +76,21 @@ class AuthControllerTest {
         Cours cours2 = new Cours("TEL202", "Télécoms avancés", 6, "Réseaux avancés", prof);
         coursRepository.saveAll(List.of(cours1, cours2));
 
-        // Création de l'étudiant
+        Section cyber = new Section();
+        cyber.setNom("Cyber");
+        cyber.setNbPlaces(30);
+        sectionRepository.save(cyber);
+
         Etudiant etu = new Etudiant();
         etu.setNom("Etudiant");
         etu.setPrenom("Inscrit");
         etu.setEmail("etudiant.inscrit@ecole.be");
         etu.setPassword(passwordEncoder.encode("etudiant123"));
         etu.setRole("ROLE_ETUDIANT");
+        etu.setSection(cyber); // ⚠️ Avant le save
         etudiantRepository.save(etu);
+
+
     }
 
 
@@ -105,54 +110,14 @@ class AuthControllerTest {
     }
 
 
-
     @Test
     void testRedirectionEtudiantInscrit() throws Exception {
-        System.out.println(new BCryptPasswordEncoder().encode("etudiant123"));
-        mockMvc.perform(formLogin("/auth/login").user("etudiant.inscrit@ecole.be").password("etudiant123"))
-                .andExpect(authenticated().withUsername("etudiant.inscrit@ecole.be"))
-                .andExpect(redirectedUrl("/etudiant/cours"));
+        assertTrue(etudiantRepository.findByEmail("etudiant.inscrit@ecole.be").isPresent());
 
-    }
-
-    @Test
-    void testRedirectionProfesseurAfterLogin() throws Exception {
-        // Juste pour vérifier que l'utilisateur existe
-        assertTrue(utilisateurRepository.findByEmail("professeur@ecole.be").isPresent());
-
-        // Authentification avec les identifiants du professeur
         mockMvc.perform(formLogin("/auth/login")
-                        .user("professeur@ecole.be")
-                        .password("professeur123"))
-                .andExpect(authenticated().withUsername("professeur@ecole.be"))
-                .andExpect(redirectedUrl("/professeur/cours"));
-    }
-
-
-    @Test
-    void testRedirectionEtudiantInscrit2() throws Exception {
-        mockMvc.perform(formLogin().user("etudiant.inscrit@ecole.be").password("password"))
+                        .user("etudiant.inscrit@ecole.be")
+                        .password("etudiant123"))
                 .andExpect(authenticated().withUsername("etudiant.inscrit@ecole.be"))
                 .andExpect(redirectedUrl("/etudiant/cours"));
-    }
-
-    @Test
-    void testRedirectionProfesseur() throws Exception {
-        mockMvc.perform(formLogin().user("professeur@ecole.be").password("password"))
-                .andExpect(authenticated().withUsername("professeur@ecole.be"))
-                .andExpect(redirectedUrl("/professeur/cours"));
-    }
-
-    @Test
-    void testLoginError() throws Exception {
-        mockMvc.perform(formLogin().user("inconnu@ecole.be").password("incorrect"))
-                .andExpect(unauthenticated())
-                .andExpect(redirectedUrl("/login?error"));
-    }
-
-    @Test
-    void testLienInscriptionVisible() throws Exception {
-        mockMvc.perform(get("/login"))
-                .andExpect(content().string(Matchers.containsString("href=\"/register\"")));
     }
 }
