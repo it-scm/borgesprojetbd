@@ -50,9 +50,19 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .loginPage("/auth/login")
-                        .defaultSuccessUrl("/home", true)
+                        .successHandler((request, response, authentication) -> {
+                            String role = authentication.getAuthorities().iterator().next().getAuthority();
+                            if (role.equals("ROLE_ETUDIANT")) {
+                                response.sendRedirect("/etudiant/cours");
+                            } else if (role.equals("ROLE_PROFESSEUR")) {
+                                response.sendRedirect("/professeur/cours");
+                            } else {
+                                response.sendRedirect("/home");
+                            }
+                        })
                         .permitAll()
                 )
+
                 .logout(logout -> logout
                         .logoutSuccessUrl("/auth/login?logout")
                         .permitAll()
