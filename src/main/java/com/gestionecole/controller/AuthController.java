@@ -43,10 +43,11 @@ public class AuthController {
 
     @PostMapping("/auth/register")
     public String register(
-            @Valid @ModelAttribute("etudiant") Etudiant etudiant,
+            @Valid @ModelAttribute("etudiant") Etudiant formEtudiant,
             BindingResult result,
             Model model,
             @RequestParam("sectionId") Long sectionId,
+            @AuthenticationPrincipal User user,
             RedirectAttributes redirectAttributes
     ) {
         Section section = sectionService.getSectionById(sectionId)
@@ -55,22 +56,31 @@ public class AuthController {
         int placesRestantes = section.getNbPlaces() - etudiantService.countEtudiantsInSection(sectionId);
 
         if (result.hasErrors()) {
-            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             return "auth/register";
         }
 
-        if (!etudiant.getEmail().matches("^[a-zA-Z]+\\.[a-zA-Z]+@ecole\\.be$")) {
-            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+        if (!formEtudiant.getEmail().matches("^[a-zA-Z]+\\.[a-zA-Z]+@ecole\\.be$")) {
+            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             model.addAttribute("emailError", "Le format de l'email doit être prenom.nom@ecole.be");
             return "auth/register";
         }
 
         try {
-            etudiantService.registerStudent(etudiant, sectionId);
+            // 🔥 Fetch existing Etudiant by email (connected user)
+            Etudiant existingEtudiant = etudiantService.getEtudiantByEmail(user.getUsername())
+                    .orElseThrow(() -> new IllegalStateException("Étudiant non trouvé"));
+
+            // 🔥 Update the section
+            existingEtudiant.setSection(section);
+
+            // 🔥 Save updated Etudiant
+            etudiantService.save(existingEtudiant);
+
             redirectAttributes.addFlashAttribute("successMessage", "Inscription réussie ! Veuillez vous connecter.");
             return "redirect:/auth/login";
         } catch (IllegalStateException e) {
-            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             model.addAttribute("errorMessage", e.getMessage());
             return "auth/register";
         }

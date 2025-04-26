@@ -76,4 +76,8 @@ public class EtudiantService {
     public int countEtudiantsInSection(Long sectionId) {
         return etudiantRepository.countBySectionId(sectionId);
     }
+
+    public void save(Etudiant existingEtudiant) {
+        etudiantRepository.save(existingEtudiant);
+    }
 }

@@ -1,15 +1,14 @@
 package com.gestionecole.controller;
 
-import com.gestionecole.GestionScolaireApplication;
 import com.gestionecole.model.Etudiant;
 import com.gestionecole.model.Professeur;
 import com.gestionecole.model.Section;
 import com.gestionecole.repository.*;
 import jakarta.persistence.EntityManager;
 import org.hamcrest.Matchers;
+import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
@@ -17,17 +16,21 @@ import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
+import org.springframework.transaction.annotation.Transactional;
 
 import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
-@SpringBootTest(classes = {GestionScolaireApplication.class})
-@AutoConfigureMockMvc
+@SpringBootTest
 @ActiveProfiles("test")
-@EntityScan(basePackages = "com.gestionecole.model")
+@AutoConfigureMockMvc
+@Transactional
 class AuthControllerTest {
 
     @Autowired private MockMvc mockMvc;
@@ -41,6 +44,22 @@ class AuthControllerTest {
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private HoraireRepository horaireRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
+
+
+    @BeforeEach
+    void cleanUpDatabase() {
+        entityManager.createNativeQuery("DELETE FROM inscription").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM horaire").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM cours").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM etudiant").executeUpdate(); // 🔥 new position
+        entityManager.createNativeQuery("DELETE FROM annee_section").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM section").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM professeur").executeUpdate();
+        entityManager.createNativeQuery("DELETE FROM utilisateur").executeUpdate();
+    }
+
+
+
 
     @Test
     void testJpaContext() {
@@ -165,6 +184,48 @@ class AuthControllerTest {
         String encodedPassword = encoder.encode(rawPassword);
         assertTrue(encoder.matches(rawPassword, encodedPassword));
     }
+
+    @Test
+    void testRegisterSectionAssignment() throws Exception {
+        // Prepare a new Section
+        Section section = new Section();
+        section.setNom("Télécom");
+        section.setNbPlaces(30);
+        section = sectionRepository.save(section);
+
+        // Prepare an Etudiant WITHOUT section (simulate unregistered student)
+        Etudiant etudiant = new Etudiant();
+        etudiant.setNom("Bob");
+        etudiant.setPrenom("Martin");
+        etudiant.setEmail("bob.martin@ecole.be");
+        etudiant.setPassword(passwordEncoder.encode("Pass1234"));
+        etudiant.setRole("ROLE_ETUDIANT");
+        etudiant.setSection(null); // Not yet assigned
+        etudiantRepository.save(etudiant);
+
+        // Perform login
+        mockMvc.perform(formLogin("/auth/login")
+                        .user("bob.martin@ecole.be")
+                        .password("Pass1234"))
+                .andExpect(authenticated().withUsername("bob.martin@ecole.be"))
+                .andExpect(redirectedUrl("/auth/register"));
+
+        // Simulate POST to /auth/register
+        mockMvc.perform(post("/auth/register")
+                        .param("sectionId", section.getId().toString())
+                        .with(user("bob.martin@ecole.be").password("Pass1234").roles("ETUDIANT"))
+                        .with(csrf()) // 🔥 CSRF token required for POST
+                        .flashAttr("etudiant", etudiant))
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"));
+
+
+        // Now verify the Etudiant has the Section assigned
+        Etudiant updatedEtudiant = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow();
+        assertNotNull(updatedEtudiant.getSection());
+        assertEquals("Télécom", updatedEtudiant.getSection().getNom());
+    }
+
 
 }
 

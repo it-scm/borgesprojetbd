@@ -63,3 +63,13 @@ CREATE TABLE horaire (
                          CONSTRAINT fk_horaire_cours FOREIGN KEY (cours_id) REFERENCES cours(id),
                          CONSTRAINT fk_horaire_annee_section FOREIGN KEY (annee_section_id) REFERENCES annee_section(id)
 );
+
+-- Create table inscription (only after etudiant and cours are created)
+CREATE TABLE inscription (
+                             id BIGSERIAL PRIMARY KEY,
+                             date_inscription DATE NOT NULL,
+                             etudiant_id BIGINT NOT NULL,
+                             cours_id BIGINT NOT NULL,
+                             CONSTRAINT fk_inscription_etudiant FOREIGN KEY (etudiant_id) REFERENCES etudiant(id),
+                             CONSTRAINT fk_inscription_cours FOREIGN KEY (cours_id) REFERENCES cours(id)
+);
