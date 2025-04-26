@@ -46,10 +46,12 @@ CREATE TABLE cours (
                        id BIGSERIAL PRIMARY KEY,
                        code VARCHAR(20) NOT NULL,
                        intitule VARCHAR(255) NOT NULL,
+                       description TEXT,
                        credits INT NOT NULL,
                        professeur_id BIGINT,
                        CONSTRAINT fk_cours_professeur FOREIGN KEY (professeur_id) REFERENCES professeur(id)
 );
+
 
 CREATE TABLE horaire (
                          id BIGSERIAL PRIMARY KEY,
