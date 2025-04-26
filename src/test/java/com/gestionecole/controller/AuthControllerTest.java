@@ -158,6 +158,13 @@ class AuthControllerTest {
         String storedHash = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow().getPassword();
         assertTrue(encoder.matches("Pass1234", storedHash));
     }
+    @Test
+    void testPasswordHash() {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+        String rawPassword = "Pass1234";
+        String encodedPassword = encoder.encode(rawPassword);
+        assertTrue(encoder.matches(rawPassword, encodedPassword));
+    }
 
 }
 

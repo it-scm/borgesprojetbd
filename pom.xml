@@ -107,7 +107,7 @@
                 <artifactId>flyway-maven-plugin</artifactId>
                 <version>10.20.1</version>
                 <configuration>
-                    <url>jdbc:postgresql://localhost:5432/schoolman_db</url>
+                    <url>jdbc:postgresql://localhost:5432/ecole_db</url>
                     <user>school_user</user>
                     <password>school_pass</password>
                     <schemas>public</schemas>
