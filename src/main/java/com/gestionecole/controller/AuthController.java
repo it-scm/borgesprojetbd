@@ -5,14 +5,13 @@ import com.gestionecole.model.Section;
 import com.gestionecole.service.EtudiantService;
 import com.gestionecole.service.SectionService;
 import jakarta.validation.Valid;
+import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
-import org.springframework.web.bind.annotation.PostMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.*;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
+import org.springframework.security.core.userdetails.User;
 
 @Controller
 public class AuthController {
@@ -31,11 +30,16 @@ public class AuthController {
     }
 
     @GetMapping("/auth/register")
-    public String registerForm(Model model) {
-        model.addAttribute("etudiant", new Etudiant());
-        model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+    public String registerForm(Model model, @AuthenticationPrincipal User user) {
+        // Find the Etudiant by email from the database
+        Etudiant etudiant = etudiantService.getEtudiantByEmail(user.getUsername())
+                .orElseThrow(() -> new IllegalStateException("Étudiant non trouvé"));
+
+        model.addAttribute("etudiant", etudiant);
+        model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
         return "auth/register";
     }
+
 
     @PostMapping("/auth/register")
     public String register(

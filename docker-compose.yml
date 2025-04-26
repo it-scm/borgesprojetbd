@@ -1,20 +1,18 @@
-version: '3.8'
+version: '3.9'
 
 services:
-  mysql:
-    image: mysql:8.0
-    container_name: ecole_mysql
-    restart: unless-stopped
-    environment:
-      MYSQL_DATABASE: ecole_dbBis
-      MYSQL_USER: school_user
-      MYSQL_PASSWORD: school_pass
-      MYSQL_ROOT_PASSWORD: root
+  postgres:
+    image: postgres:16
+    container_name: ecole_postgres
+    restart: always
     ports:
-      - "8889:3306"  # Maps host port 8889 to container port 3306
+      - "5432:5432"
+    environment:
+      POSTGRES_USER: school_user
+      POSTGRES_PASSWORD: school_pass
+      POSTGRES_DB: ecole_db
     volumes:
-      - mysql_data:/var/lib/mysql
-    command: --default-authentication-plugin=mysql_native_password
+      - postgres_data:/var/lib/postgresql/data
 
 volumes:
-  mysql_data:
+  postgres_data:

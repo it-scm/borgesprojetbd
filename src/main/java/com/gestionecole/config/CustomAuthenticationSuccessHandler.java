@@ -31,16 +31,15 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             String email = userDetails.getUsername();
             log.debug("Authentication success for user: {}", email);
 
-            // Vérifie si c'est un étudiant
             etudiantRepository.findByEmail(email).ifPresentOrElse(
                     etudiant -> {
                         try {
                             if (etudiant.getSection() == null) {
                                 log.info("Etudiant sans section détecté : redirection vers la page d'inscription");
-                                response.sendRedirect("/auth/register");
+                                response.sendRedirect(request.getContextPath() + "/auth/register");
                             } else {
                                 log.info("Etudiant inscrit : redirection vers ses cours");
-                                response.sendRedirect("/etudiant/cours");
+                                response.sendRedirect(request.getContextPath() + "/etudiant/cours");
                             }
                         } catch (IOException e) {
                             log.error("Erreur lors de la redirection après authentification", e);
@@ -48,9 +47,8 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
                     },
                     () -> {
                         try {
-                            // Sinon c'est un professeur
                             log.info("Professeur détecté : redirection vers ses cours");
-                            response.sendRedirect("/professeur/cours");
+                            response.sendRedirect(request.getContextPath() + "/professeur/cours");
                         } catch (IOException e) {
                             log.error("Erreur lors de la redirection après authentification", e);
                         }
@@ -58,7 +56,7 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             );
         } else {
             log.error("Authentication principal n'est pas de type UserDetails : {}", principal.getClass().getName());
-            response.sendRedirect("/auth/login?error=true");
+            response.sendRedirect(request.getContextPath() + "/auth/login?error=true");
         }
     }
 }

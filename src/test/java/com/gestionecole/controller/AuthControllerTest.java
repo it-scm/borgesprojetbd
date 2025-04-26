@@ -13,11 +13,12 @@ import org.springframework.boot.autoconfigure.domain.EntityScan;
 import org.springframework.boot.test.autoconfigure.web.servlet.AutoConfigureMockMvc;
 import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 
-import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.*;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
@@ -105,7 +106,7 @@ class AuthControllerTest {
                         .user("etudiant.noninscrit@ecole.be")
                         .password("etudiant123"))
                 .andExpect(authenticated().withUsername("etudiant.noninscrit@ecole.be"))
-                .andExpect(redirectedUrl("/register"));
+                .andExpect(redirectedUrl("/auth/register"));
     }
 
     @Test
@@ -140,5 +141,23 @@ class AuthControllerTest {
                         .password("motdepasseincorrect"))
                 .andExpect(redirectedUrl("/auth/login?error=true"));
     }
+
+    @Test
+    void testPassword() {
+        BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
+
+        Etudiant etudiant = new Etudiant();
+        etudiant.setNom("Etudiant");
+        etudiant.setPrenom("NonInscrit");
+        etudiant.setEmail("bob.martin@ecole.be");
+        etudiant.setPassword(encoder.encode("Pass1234"));
+        etudiant.setRole("ROLE_ETUDIANT");
+        etudiant.setSection(null);
+        etudiantRepository.save(etudiant);
+
+        String storedHash = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow().getPassword();
+        assertTrue(encoder.matches("Pass1234", storedHash));
+    }
+
 }
 
