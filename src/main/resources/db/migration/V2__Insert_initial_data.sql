@@ -10,10 +10,11 @@ INSERT INTO section (nom, nb_places) VALUES
                                          ('Électronique', 20);
 
 -- Insert academic years
-INSERT INTO annee_section (annee, section_id) VALUES
-                                                  (2024, 1),
-                                                  (2024, 2),
-                                                  (2024, 3);
+INSERT INTO annee_section (annee_academique, section_id) VALUES
+                                                             ('2024-2025', 1),
+                                                             ('2024-2025', 2),
+                                                             ('2024-2025', 3);
+
 
 -- Insert students (utilisateur first)
 INSERT INTO utilisateur (nom, prenom, email, password, role) VALUES

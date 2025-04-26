@@ -20,10 +20,11 @@ CREATE TABLE section (
 
 CREATE TABLE annee_section (
                                id BIGSERIAL PRIMARY KEY,
-                               annee INT NOT NULL,
+                               annee_academique VARCHAR(255) NOT NULL,
                                section_id BIGINT,
                                CONSTRAINT fk_annee_section_section FOREIGN KEY (section_id) REFERENCES section(id)
 );
+
 
 CREATE TABLE etudiant (
                           id BIGINT PRIMARY KEY,
