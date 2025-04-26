@@ -66,9 +66,11 @@ CREATE TABLE inscription (
                              id BIGSERIAL PRIMARY KEY,
                              etudiant_id BIGINT,
                              cours_id BIGINT,
+                             date_inscription TIMESTAMP,
                              CONSTRAINT fk_inscription_etudiant FOREIGN KEY (etudiant_id) REFERENCES etudiant(id),
                              CONSTRAINT fk_inscription_cours FOREIGN KEY (cours_id) REFERENCES cours(id)
 );
+
 
 CREATE TABLE note (
                       id BIGSERIAL PRIMARY KEY,
