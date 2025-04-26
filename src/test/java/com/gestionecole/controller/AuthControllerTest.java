@@ -48,14 +48,16 @@ class AuthControllerTest {
 
     @BeforeEach
     void cleanUpDatabase() {
+        entityManager.createNativeQuery("DELETE FROM note").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM inscription").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM horaire").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM cours").executeUpdate();
-        entityManager.createNativeQuery("DELETE FROM etudiant").executeUpdate(); // 🔥 new position
+        entityManager.createNativeQuery("DELETE FROM etudiant").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM annee_section").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM section").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM professeur").executeUpdate();
         entityManager.createNativeQuery("DELETE FROM utilisateur").executeUpdate();
+
     }
 
 

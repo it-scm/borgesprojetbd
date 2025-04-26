@@ -41,12 +41,32 @@ INSERT INTO professeur (id, matricule) VALUES
                                            (6, 'R-10003'),
                                            (7, 'R-10004');
 
--- Insert courses
-INSERT INTO cours (code, intitule, credits, professeur_id) VALUES
-                                                               ('UE299', 'Bases des réseaux', 5, 4),
-                                                               ('UE301', 'Bases de données', 4, 4),
-                                                               ('UE302', 'Analyse informatique', 4, 4);
+-- Insert test courses linked to a professor with id = 4
+INSERT INTO cours (code, intitule, description, credits, professeur_id) VALUES
+                                                                            ('UE299', 'Bases des réseaux', 'Introduction aux réseaux TCP/IP', 5, 4),
+                                                                            ('UE301', 'Bases de données', 'Conception et gestion de bases de données', 4, 4),
+                                                                            ('UE302', 'Analyse informatique', 'Introduction à l''analyse de systèmes informatiques', 4, 4);
+
 
 -- Insert schedules (horaires)
 INSERT INTO horaire (jour_semaine, heure_debut, heure_fin, cours_id, annee_section_id) VALUES
     ('Lundi', '08:00:00', '10:00:00', 1, 1);
+
+
+-- Insert into inscription (student enrollments)
+INSERT INTO inscription (etudiant_id, cours_id) VALUES
+                                                    (1, 1), -- Alice enrolled in UE299
+                                                    (2, 1), -- Bob enrolled in UE299
+                                                    (3, 1), -- Charlie enrolled in UE299
+                                                    (1, 2), -- Alice enrolled in UE301
+                                                    (2, 3); -- Bob enrolled in UE302
+
+-- Insert empty notes (only needed if you prefer eager creation, optional)
+-- Otherwise, the system will create them when needed.
+-- Insert into note (student grades)
+INSERT INTO note (etudiant_id, cours_id, premiere_session, deuxieme_session) VALUES
+                                                                                 (1, 1, NULL, NULL),
+                                                                                 (2, 1, NULL, NULL),
+                                                                                 (3, 1, NULL, NULL),
+                                                                                 (1, 2, NULL, NULL),
+                                                                                 (2, 3, NULL, NULL);

@@ -1,6 +1,7 @@
 package com.gestionecole.service;
 
 import com.gestionecole.model.Cours;
+import com.gestionecole.model.Professeur;
 import com.gestionecole.repository.CoursRepository;
 import org.springframework.stereotype.Service;
 
@@ -31,4 +32,9 @@ public class CoursService {
     public void deleteCours(Long id) {
         coursRepository.deleteById(id);
     }
+
+    public List<Cours> getCoursByProfesseur(Professeur professeur) {
+        return coursRepository.findByProfesseur(professeur);
+    }
+
 }

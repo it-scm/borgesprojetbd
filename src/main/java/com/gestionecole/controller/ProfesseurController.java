@@ -32,9 +32,15 @@ public class ProfesseurController {
 
     @GetMapping("/cours")
     public String voirCours(Model model) {
-        model.addAttribute("cours", coursService.getAllCours());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Professeur professeur = professeurService.getProfesseurByEmail(email).orElse(null);
+        if (professeur != null) {
+            model.addAttribute("cours", coursService.getCoursByProfesseur(professeur));
+        }
         return "professeur/cours/liste";
     }
+
 
     @GetMapping("/horaires")
     public String voirHoraires(Model model) {
@@ -49,9 +55,15 @@ public class ProfesseurController {
 
     @GetMapping("/notes")
     public String listeCoursNotes(Model model) {
-        model.addAttribute("cours", coursService.getAllCours());
+        Authentication authentication = SecurityContextHolder.getContext().getAuthentication();
+        String email = authentication.getName();
+        Professeur professeur = professeurService.getProfesseurByEmail(email).orElse(null);
+        if (professeur != null) {
+            model.addAttribute("cours", coursService.getCoursByProfesseur(professeur));
+        }
         return "professeur/notes/liste_cours";
     }
+
 
     @GetMapping("/notes/{coursId}")
     public String listeEtudiantsPourCours(@PathVariable Long coursId, Model model) {
