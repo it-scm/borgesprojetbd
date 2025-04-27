@@ -180,6 +180,22 @@ class AuthControllerTest {
         assertNotNull(savedEtudiant.getSection());
     }
 
+    @Test
+    void testRegisterEtudiantValidationError() throws Exception {
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                                .param("nom", "") // Empty name -> validation error
+                                .param("prenom", "Bob")
+                                .param("email", "bob.martin@ecole.be")
+                                .param("password", "Pass1234")
+                                .param("sectionId", "1") // even if sectionId is OK
+                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/register"))
+                .andExpect(content().string(Matchers.containsString("form"))); // The form should still be there
+    }
+
 
 
     @Test
@@ -199,6 +215,61 @@ class AuthControllerTest {
         String storedHash = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow().getPassword();
         assertTrue(encoder.matches("Pass1234", storedHash));
     }
+
+
+    @Test
+    void testRegisterEtudiantInvalidEmailFormat() throws Exception {
+        Section section = new Section("Cyber", 30);
+        sectionRepository.save(section);
+
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                                .param("nom", "Bob")
+                                .param("prenom", "Martin")
+                                .param("email", "bobmartin@gmail.com") // Wrong format
+                                .param("password", "Pass1234")
+                                .param("sectionId", section.getId().toString())
+                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/register"))
+                .andExpect(content().string(Matchers.containsString("Le format de l&#39;email doit être prenom.nom@ecole.be"))); // 🔥 escaped apostrophe
+    }
+
+
+
+
+    @Test
+    void testRegisterEtudiantNoPlacesAvailable() throws Exception {
+        // Arrange
+        Section section = new Section("Réseaux", 1);
+        sectionRepository.save(section);
+
+        Etudiant existingEtudiant = new Etudiant();
+        existingEtudiant.setNom("John");
+        existingEtudiant.setPrenom("Doe");
+        existingEtudiant.setEmail("john.doe@ecole.be");
+        existingEtudiant.setPassword(passwordEncoder.encode("password"));
+        existingEtudiant.setRole("ROLE_ETUDIANT");
+        existingEtudiant.setSection(section);
+        etudiantRepository.save(existingEtudiant);
+
+        // Act
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                                .param("nom", "Jane")
+                                .param("prenom", "Doe")
+                                .param("email", "jane.doe@ecole.be")
+                                .param("password", "password")
+                                .param("sectionId", section.getId().toString())
+                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                )
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/register"))
+                .andExpect(content().string(Matchers.containsString("Plus de places disponibles dans cette section")));
+    }
+
+
     @Test
     void testPasswordHash() {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
