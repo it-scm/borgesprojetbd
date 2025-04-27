@@ -22,12 +22,13 @@
         </thead>
         <tbody>
         <tr th:each="inscription : ${inscriptions}">
-            <td th:text="${inscription.cours.nom}"></td>
+            <td th:text="${inscription.cours.intitule}"></td> <!-- 🔥 Correct field -->
             <td th:text="${inscription.cours.code}"></td>
             <td th:text="${inscription.cours.credits}"></td>
             <td th:text="${inscription.cours.description}"></td>
         </tr>
         </tbody>
+
     </table>
     <p th:unless="${inscriptions != null and !inscriptions.isEmpty()}">
         Vous n'êtes inscrit à aucun cours pour le moment.
