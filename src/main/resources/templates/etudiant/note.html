@@ -21,7 +21,7 @@
         </thead>
         <tbody>
         <tr th:each="note : ${notes}">
-            <td th:text="${note.cours.nom}"></td>
+            <td th:text="${note.cours.intitule}"></td>
             <td th:text="${note.premiereSession != null ? note.premiereSession : '-'}"></td>
             <td th:text="${note.deuxiemeSession != null ? note.deuxiemeSession : '-'}"></td>
         </tr>
