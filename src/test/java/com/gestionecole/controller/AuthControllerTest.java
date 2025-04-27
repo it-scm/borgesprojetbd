@@ -18,13 +18,11 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
-import static org.junit.jupiter.api.Assertions.*;
+import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
-import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.user;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
-import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -112,23 +110,6 @@ class AuthControllerTest {
                 .andExpect(redirectedUrl("/etudiant/cours"));
     }
 
-    @Test
-    void testRedirectionEtudiantNonInscrit() throws Exception {
-        Etudiant etudiant = new Etudiant();
-        etudiant.setNom("Etudiant");
-        etudiant.setPrenom("NonInscrit");
-        etudiant.setEmail("etudiant.noninscrit@ecole.be");
-        etudiant.setPassword(passwordEncoder.encode("etudiant123"));
-        etudiant.setRole("ROLE_ETUDIANT");
-        etudiant.setSection(null);
-        etudiantRepository.save(etudiant);
-
-        mockMvc.perform(formLogin("/auth/login")
-                        .user("etudiant.noninscrit@ecole.be")
-                        .password("etudiant123"))
-                .andExpect(authenticated().withUsername("etudiant.noninscrit@ecole.be"))
-                .andExpect(redirectedUrl("/auth/register"));
-    }
 
     @Test
     void testRedirectionProfesseurAfterLogin() throws Exception {
@@ -166,6 +147,42 @@ class AuthControllerTest {
     }
 
     @Test
+    void testPageRegisterAccessible() throws Exception {
+        mockMvc.perform(get("/auth/register"))
+                .andExpect(status().isOk())
+                .andExpect(view().name("auth/register"))
+                .andExpect(content().string(Matchers.containsString("Inscription Étudiant")));
+    }
+
+
+    @Test
+    void testRegisterEtudiantSuccess() throws Exception {
+        // Arrange
+        Section section = new Section("Informatique", 30);
+        sectionRepository.save(section);
+
+        // Act
+        mockMvc.perform(
+                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                                .param("nom", "Martin")
+                                .param("prenom", "Bob")
+                                .param("email", "bob.martin@ecole.be")
+                                .param("password", "Pass1234")
+                                .param("sectionId", section.getId().toString())
+                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()) // 🔥 Needed for POST
+                )
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/login"));
+
+        // Assert: verify student is created
+        Etudiant savedEtudiant = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow();
+        assertTrue(passwordEncoder.matches("Pass1234", savedEtudiant.getPassword()));
+        assertNotNull(savedEtudiant.getSection());
+    }
+
+
+
+    @Test
     void testPassword() {
         BCryptPasswordEncoder encoder = new BCryptPasswordEncoder();
 
@@ -174,6 +191,7 @@ class AuthControllerTest {
         etudiant.setPrenom("NonInscrit");
         etudiant.setEmail("bob.martin@ecole.be");
         etudiant.setPassword(encoder.encode("Pass1234"));
+        etudiant.setMatricule("E-10009");
         etudiant.setRole("ROLE_ETUDIANT");
         etudiant.setSection(null);
         etudiantRepository.save(etudiant);
@@ -189,48 +207,6 @@ class AuthControllerTest {
         assertTrue(encoder.matches(rawPassword, encodedPassword));
     }
 
-    @Test
-    void testRegisterSectionAssignment() throws Exception {
-        // Create and save a new Section
-        Section section = sectionRepository.save(Section.builder()
-                .nom("Télécom")
-                .nbPlaces(30)
-                .build());
-
-        // Create and save a new Etudiant WITHOUT section
-        Etudiant etudiant = Etudiant.builder()
-                .nom("Bob")
-                .prenom("Martin")
-                .email("bob.martin@ecole.be")
-                .password(passwordEncoder.encode("Pass1234"))
-                .role("ROLE_ETUDIANT")
-                .build();
-        etudiantRepository.saveAndFlush(etudiant); // 🔥 Save and flush immediately to DB
-
-        // Perform login: the app should redirect Bob to the registration page
-        mockMvc.perform(formLogin("/auth/login")
-                        .user("bob.martin@ecole.be")
-                        .password("Pass1234"))
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/auth/register"))
-                .andExpect(authenticated().withUsername("bob.martin@ecole.be"));
-
-        // Perform registration POST
-        mockMvc.perform(post("/auth/register")
-                        .param("sectionId", section.getId().toString())
-                        .with(csrf())
-                        .with(user("bob.martin@ecole.be").password("Pass1234").roles("ETUDIANT"))
-                        .flashAttr("etudiant", new Etudiant())) // 🔥 flashAttr empty because server loads user from session
-                .andExpect(status().is3xxRedirection())
-                .andExpect(redirectedUrl("/auth/login"));
-
-        // Re-fetch Etudiant from database to verify Section is assigned
-        Etudiant updatedEtudiant = etudiantRepository.findByEmail("bob.martin@ecole.be")
-                .orElseThrow(() -> new AssertionError("Etudiant not found"));
-
-        assertNotNull(updatedEtudiant.getSection(), "Section should be assigned after registration");
-        assertEquals("Télécom", updatedEtudiant.getSection().getNom());
-    }
 
 
     @Test
