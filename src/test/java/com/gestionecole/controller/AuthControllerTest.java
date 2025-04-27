@@ -191,44 +191,47 @@ class AuthControllerTest {
 
     @Test
     void testRegisterSectionAssignment() throws Exception {
-        // Prepare a new Section
-        Section section = new Section();
-        section.setNom("Télécom");
-        section.setNbPlaces(30);
-        section = sectionRepository.save(section);
+        // Create and save a new Section
+        Section section = sectionRepository.save(Section.builder()
+                .nom("Télécom")
+                .nbPlaces(30)
+                .build());
 
-        // Prepare an Etudiant WITHOUT section (simulate unregistered student)
-        Etudiant etudiant = new Etudiant();
-        etudiant.setNom("Bob");
-        etudiant.setPrenom("Martin");
-        etudiant.setEmail("bob.martin@ecole.be");
-        etudiant.setPassword(passwordEncoder.encode("Pass1234"));
-        etudiant.setRole("ROLE_ETUDIANT");
-        etudiant.setSection(null); // Not yet assigned
-        etudiantRepository.save(etudiant);
+        // Create and save a new Etudiant WITHOUT section
+        Etudiant etudiant = Etudiant.builder()
+                .nom("Bob")
+                .prenom("Martin")
+                .email("bob.martin@ecole.be")
+                .password(passwordEncoder.encode("Pass1234"))
+                .role("ROLE_ETUDIANT")
+                .build();
+        etudiantRepository.saveAndFlush(etudiant); // 🔥 Save and flush immediately to DB
 
-        // Perform login
+        // Perform login: the app should redirect Bob to the registration page
         mockMvc.perform(formLogin("/auth/login")
                         .user("bob.martin@ecole.be")
                         .password("Pass1234"))
-                .andExpect(authenticated().withUsername("bob.martin@ecole.be"))
-                .andExpect(redirectedUrl("/auth/register"));
+                .andExpect(status().is3xxRedirection())
+                .andExpect(redirectedUrl("/auth/register"))
+                .andExpect(authenticated().withUsername("bob.martin@ecole.be"));
 
-        // Simulate POST to /auth/register
+        // Perform registration POST
         mockMvc.perform(post("/auth/register")
                         .param("sectionId", section.getId().toString())
+                        .with(csrf())
                         .with(user("bob.martin@ecole.be").password("Pass1234").roles("ETUDIANT"))
-                        .with(csrf()) // 🔥 CSRF token required for POST
-                        .flashAttr("etudiant", etudiant))
+                        .flashAttr("etudiant", new Etudiant())) // 🔥 flashAttr empty because server loads user from session
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/auth/login"));
 
+        // Re-fetch Etudiant from database to verify Section is assigned
+        Etudiant updatedEtudiant = etudiantRepository.findByEmail("bob.martin@ecole.be")
+                .orElseThrow(() -> new AssertionError("Etudiant not found"));
 
-        // Now verify the Etudiant has the Section assigned
-        Etudiant updatedEtudiant = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow();
-        assertNotNull(updatedEtudiant.getSection());
+        assertNotNull(updatedEtudiant.getSection(), "Section should be assigned after registration");
         assertEquals("Télécom", updatedEtudiant.getSection().getNom());
     }
+
 
     @Test
     void showSchema() {
