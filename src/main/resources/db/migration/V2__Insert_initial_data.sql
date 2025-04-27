@@ -83,3 +83,4 @@ INSERT INTO note (etudiant_id, cours_id, premiere_session, deuxieme_session) VAL
                                                                                  (2, 5, NULL, NULL),
                                                                                  (3, 4, NULL, NULL),
                                                                                  (3, 5, NULL, NULL);
+SELECT setval('utilisateur_id_seq', (SELECT MAX(id) FROM utilisateur));

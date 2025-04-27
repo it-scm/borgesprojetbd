@@ -22,6 +22,7 @@ public class FlywayDevCleaner {
         if ("dev".equals(activeProfile)) {
             flyway.clean();
             flyway.migrate();
+            flyway.repair();
         }
     }
 }

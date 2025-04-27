@@ -1,17 +1,17 @@
 package com.gestionecole.controller;
 
 import com.gestionecole.model.Etudiant;
-import com.gestionecole.model.Section;
 import com.gestionecole.service.EtudiantService;
 import com.gestionecole.service.SectionService;
 import jakarta.validation.Valid;
-import org.springframework.security.core.annotation.AuthenticationPrincipal;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.validation.BindingResult;
-import org.springframework.web.bind.annotation.*;
+import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.RequestParam;
 import org.springframework.web.servlet.mvc.support.RedirectAttributes;
-import org.springframework.security.core.userdetails.User;
 
 @Controller
 public class AuthController {
@@ -29,32 +29,22 @@ public class AuthController {
         return "auth/login";
     }
 
+    // Public registration for new students
     @GetMapping("/auth/register")
-    public String registerForm(Model model, @AuthenticationPrincipal User user) {
-        // Find the Etudiant by email from the database
-        Etudiant etudiant = etudiantService.getEtudiantByEmail(user.getUsername())
-                .orElseThrow(() -> new IllegalStateException("Étudiant non trouvé"));
-
-        model.addAttribute("etudiant", etudiant);
+    public String registerForm(Model model) {
+        model.addAttribute("etudiant", new Etudiant());  // 🔥 empty form for new Etudiant
         model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
         return "auth/register";
     }
-
 
     @PostMapping("/auth/register")
     public String register(
             @Valid @ModelAttribute("etudiant") Etudiant formEtudiant,
             BindingResult result,
-            Model model,
             @RequestParam("sectionId") Long sectionId,
-            @AuthenticationPrincipal User user,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
-        Section section = sectionService.getSectionById(sectionId)
-                .orElseThrow(() -> new IllegalStateException("Section non trouvée"));
-
-        int placesRestantes = section.getNbPlaces() - etudiantService.countEtudiantsInSection(sectionId);
-
         if (result.hasErrors()) {
             model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             return "auth/register";
@@ -67,22 +57,14 @@ public class AuthController {
         }
 
         try {
-            // 🔥 Fetch existing Etudiant by email (connected user)
-            Etudiant existingEtudiant = etudiantService.getEtudiantByEmail(user.getUsername())
-                    .orElseThrow(() -> new IllegalStateException("Étudiant non trouvé"));
-
-            // 🔥 Update the section
-            existingEtudiant.setSection(section);
-
-            // 🔥 Save updated Etudiant
-            etudiantService.save(existingEtudiant);
-
-            redirectAttributes.addFlashAttribute("successMessage", "Inscription réussie ! Veuillez vous connecter.");
-            return "redirect:/auth/login";
+            etudiantService.registerStudent(formEtudiant, sectionId);
         } catch (IllegalStateException e) {
             model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
-            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("sectionError", e.getMessage());
             return "auth/register";
         }
+
+        redirectAttributes.addFlashAttribute("successMessage", "Inscription réussie ! Veuillez vous connecter.");
+        return "redirect:/auth/login";
     }
 }
