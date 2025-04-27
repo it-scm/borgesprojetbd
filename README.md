@@ -1,10 +1,56 @@
 # 🎓 Gestion Scolaire - Projet de Gestion de Base de Données en Réseau
 
 ---
+## Technologies utilisées
 
-## 📚 Description
+- **Backend** : Spring Boot 3.x
+- **Frontend** : Thymeleaf, HTML, CSS
+- **Base de données** : PostgreSQL
+- **Version Java** : 17+
+- **Outils** : IntelliJ IDEA, Maven
+- **Sécurité** : Spring Security pour la gestion des rôles (Professeur et Étudiant)
 
-Gestion Scolaire est une application web de gestion d'école construite avec des technologies modernes.
+---
+
+## 📜 Cahier des charges
+
+### Rôles utilisateurs
+
+#### Professeur
+- Peut voir ses cours, ses horaires, et les notes des étudiants dans ses cours.
+- Peut modifier les notes des étudiants (mais pas les cours ni les horaires).
+- Ne peut pas insérer une note de 2e session tant que celle de la 1re session n'est pas présente.
+- Peut consulter son propre horaire.
+
+#### Étudiant
+- Peut se connecter, voir ses cours, horaires et notes.
+- Ne peut modifier aucune information personnelle.
+- Impossible de se réinscrire après une première inscription réussie.
+
+### Fonctionnalités spécifiques
+
+- Page de connexion avec email et mot de passe.
+- Redirection automatique des étudiants non inscrits vers la page d'inscription.
+- Page d'inscription pour choisir une section (Télécom, Cyber, Électronique) avec places disponibles.
+- Mot de passe encodé avant stockage.
+- Footer/Header présent sur toutes les pages pour la navigation.
+
+### Architecture du projet
+
+- **Entités** :
+  - Utilisateur (hérité par Professeur et Étudiant)
+  - Section
+  - Cours
+  - Horaire
+  - Inscription
+  - Note
+
+- **Sécurité** :
+  - Gestion stricte des accès avec rôles Spring Security (`ROLE_ETUDIANT`, `ROLE_PROFESSEUR`).
+  - Redirection en cas d’échec de connexion.
+
+- **Base de données** :
+  - Tables principales : utilisateur, professeur, étudiant, section, cours, horaire, inscription, note.
 
 ---
 
@@ -28,7 +74,7 @@ Gestion Scolaire est une application web de gestion d'école construite avec des
 - Java 21
 - Maven 3.9+
 - PostgreSQL 15+ ou Docker
-- Docker & Docker Compose (si tu veux utiliser la stack en conteneurs)
+- Docker & Docker Compose
 - IntelliJ IDEA (recommandé)
 
 ---
@@ -78,14 +124,14 @@ spring:
 3. Lancer la classe `GestionScolaireApplication.java`.
 
 ⚡ À chaque démarrage :
-- Flyway `clean` + `migrate` se lance automatiquement.
+- Flyway `clean` + `migrate` est exécuté automatiquement.
 - La base est régénérée à partir des scripts SQL (`db/migration`).
 
 ---
 
 ### 4. Utilisateurs prédéfinis
 
-Tous les utilisateurs utilisent le mot de passe **`Pass1234`**.
+Tous les utilisateurs utilisent le même mot de passe **`Pass1234`**.
 
 #### Étudiants
 ```
@@ -110,13 +156,12 @@ david.lemaire@ecole.be
 
 ---
 
-## 📋 Fonctionnalités
+## 📋 Fonctionnalités principales
 
 ### Étudiants
 - Consulter leurs cours.
 - Consulter leurs horaires.
-- Voir leurs notes (lecture seule).
-- S'inscrire à une section (si non inscrit).
+- Voir leurs notes.
 
 ### Professeurs
 - Voir la liste de leurs cours.
@@ -129,25 +174,21 @@ david.lemaire@ecole.be
 
 ## 1. Installer Docker et Docker Compose sur Windows
 
-Si tu n'as pas encore installé Docker :
+- Télécharger Docker Desktop : [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+- Installer Docker en suivant les instructions.
+- Activer WSL 2 pendant l'installation si proposé.
+- Vérifier que les commandes fonctionnent :
 
-- Télécharge Docker Desktop pour Windows : [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
-- Installe-le en suivant l'assistant d'installation.
-- Active l'intégration WSL 2 (Docker propose l'activation automatique).
-- Redémarre ton PC si nécessaire.
-
-Après installation :
 ```bash
 docker --version
 docker-compose --version
 ```
-Ces deux commandes doivent fonctionner.
 
-Docker Compose est inclus nativement dans Docker Desktop depuis les dernières versions.
+✅ Docker Compose est inclus dans Docker Desktop.
 
 ---
 
-## 2. Lancer PostgreSQL avec Docker Compose
+## 2. Utiliser Docker Compose pour PostgreSQL
 
 Créer un fichier `docker-compose.yml` :
 
@@ -172,40 +213,37 @@ volumes:
   pgdata:
 ```
 
-Puis exécuter :
+Démarrer PostgreSQL :
 
 ```bash
 docker-compose up -d
 ```
 
-✅ PostgreSQL sera disponible sur `localhost:5432` avec :
-- **Database** : `ecole_db`
-- **User** : `postgres`
-- **Password** : `postgres`
+✅ PostgreSQL sera disponible sur `localhost:5432`.
 
 ---
 
-## 3. Lancer l'application Spring Boot
+## 3. Lancer Spring Boot
 
-Depuis IntelliJ, toujours avec :
+Dans IntelliJ, lancer la classe `GestionScolaireApplication.java` avec :
 
 ```text
 --spring.profiles.active=dev
 ```
 
-La connexion se fera directement sur la base PostgreSQL Dockerisée.
+La base PostgreSQL Dockerisée sera utilisée automatiquement.
 
 ---
 
 ## 🎯 Bonnes pratiques
 
 - Toujours utiliser `--spring.profiles.active=dev` en local.
-- Ne jamais désactiver `flyway.clean-disabled: true` en production !
-- Utiliser Docker pour isoler ta base sans polluer ton OS.
-- Contrôler les logs de démarrage pour corriger rapidement d'éventuelles erreurs Flyway ou Hibernate.
+- Ne jamais désactiver `flyway.clean-disabled` en production !
+- Docker est recommandé pour isoler PostgreSQL du système local.
+- Surveiller les logs au démarrage (`INFO`, `DEBUG`) pour repérer d'éventuelles erreurs.
 
 ---
 
 ## 📜 Licence
 
-Projet éducatif sous licence libre pour démonstration et apprentissage.
+Projet éducatif à but pédagogique sous licence libre.
