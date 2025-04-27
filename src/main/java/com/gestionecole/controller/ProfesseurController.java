@@ -14,6 +14,10 @@ import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
 
+import java.util.HashMap;
+import java.util.List;
+import java.util.Map;
+
 @Controller
 @RequestMapping("/professeur")
 public class ProfesseurController {
@@ -69,11 +73,19 @@ public class ProfesseurController {
     public String listeEtudiantsPourCours(@PathVariable Long coursId, Model model) {
         Cours cours = coursService.getCoursById(coursId).orElse(null);
         if (cours != null) {
+            List<Etudiant> etudiants = noteService.getEtudiantsInscritsAuCours(cours);
+            Map<Long, Note> notes = new HashMap<>();
+            for (Etudiant etudiant : etudiants) {
+                noteService.getNoteByEtudiantAndCours(etudiant.getId(), cours.getId())
+                        .ifPresent(note -> notes.put(etudiant.getId(), note));
+            }
             model.addAttribute("cours", cours);
-            model.addAttribute("etudiants", noteService.getEtudiantsInscritsAuCours(cours));
+            model.addAttribute("etudiants", etudiants);
+            model.addAttribute("notes", notes);
         }
         return "professeur/notes/liste_etudiants";
     }
+
 
     @GetMapping("/notes/modifier/{etudiantId}/{coursId}")
     public String modifierNoteForm(@PathVariable Long etudiantId, @PathVariable Long coursId, Model model) {
@@ -81,45 +93,35 @@ public class ProfesseurController {
             Note nouvelleNote = new Note();
             Etudiant etudiant = new Etudiant();
             etudiant.setId(etudiantId);
+            etudiant.setNom("Etudiant inconnu"); // 🔥 Placeholder value to avoid Thymeleaf error
+            etudiant.setPrenom("");              // 🔥
             Cours cours = new Cours();
             cours.setId(coursId);
+            cours.setIntitule("Cours inconnu");  // 🔥 Placeholder too
             nouvelleNote.setEtudiant(etudiant);
             nouvelleNote.setCours(cours);
             return nouvelleNote;
         });
+
         model.addAttribute("note", note);
         model.addAttribute("coursId", coursId);
         return "professeur/notes/modifier";
     }
 
     @PostMapping("/notes/modifier")
-    public String enregistrerNote(@RequestParam("etudiantId") Long etudiantId,
-                                  @RequestParam("coursId") Long coursId,
-                                  @RequestParam(value = "premiereSession", required = false) Double premiereSession,
-                                  @RequestParam(value = "deuxiemeSession", required = false) Double deuxiemeSession,
-                                  Model model) {
-        Note existingNote = noteService.getNoteByEtudiantAndCours(etudiantId, coursId).orElse(new Note());
-        Etudiant etudiant = new Etudiant();
-        etudiant.setId(etudiantId);
-        Cours cours = new Cours();
-        cours.setId(coursId);
-        existingNote.setEtudiant(etudiant);
-        existingNote.setCours(cours);
-
-        if (premiereSession != null) {
-            existingNote.setPremiereSession(premiereSession);
-        }
-        if (deuxiemeSession != null) {
-            if (existingNote.getPremiereSession() == null) {
-                model.addAttribute("errorMessage", "La note de deuxième session ne peut être ajoutée tant que la première session n'a pas eu lieu.");
-                model.addAttribute("note", existingNote);
-                model.addAttribute("coursId", coursId);
-                return "professeur/notes/modifier";
-            }
-            existingNote.setDeuxiemeSession(deuxiemeSession);
+    public String enregistrerNote(@ModelAttribute("note") Note note, Model model) {
+        if (note.getEtudiant() == null || note.getEtudiant().getId() == null
+                || note.getCours() == null || note.getCours().getId() == null) {
+            throw new IllegalStateException("Note missing Etudiant or Cours information");
         }
 
-        noteService.saveNote(existingNote);
-        return "redirect:/professeur/notes/" + coursId;
+        noteService.createOrUpdateNote(note);
+
+        return "redirect:/professeur/notes/" + note.getCours().getId();
     }
+
+
+
+
+
 }

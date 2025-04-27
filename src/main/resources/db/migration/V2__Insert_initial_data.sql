@@ -14,20 +14,20 @@ INSERT INTO annee_section (annee_academique, section_id) VALUES
                                                              ('2024-2025', 1),
                                                              ('2024-2025', 2),
                                                              ('2024-2025', 3);
+--$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa
 
+-- Insert Students
+INSERT INTO utilisateur (email, nom, prenom, password, role, matricule) VALUES
+                                                                            ('alice.dupont@ecole.be', 'Dupont', 'Alice', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_ETUDIANT', 'E-10001'),
+                                                                            ('bob.martin@ecole.be', 'Martin', 'Bob', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_ETUDIANT', 'E-10002'),
+                                                                            ('charlie.petit@ecole.be', 'Petit', 'Charlie', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_ETUDIANT', 'E-10003');
 
--- Insert students (utilisateur first)
-INSERT INTO utilisateur (nom, prenom, email, password, role) VALUES
-                                                                 ('Dupont', 'Alice', 'alice.dupont@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_ETUDIANT'),
-                                                                 ('Martin', 'Bob', 'bob.martin@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_ETUDIANT'),
-                                                                 ('Petit', 'Charlie', 'charlie.petit@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_ETUDIANT');
-
--- Insert professors (utilisateur first)
-INSERT INTO utilisateur (nom, prenom, email, password, role) VALUES
-                                                                 ('Bernair', 'Michel', 'michel.bernair@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR'),
-                                                                 ('Hecquet', 'Jean-Paul', 'jean-paul.hecquet@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR'),
-                                                                 ('Jaghou', 'Ali', 'ali.jaghou@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR'),
-                                                                 ('Lemaire', 'David', 'david.lemaire@ecole.be', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR');
+-- Insert Professors
+INSERT INTO utilisateur (email, nom, prenom, password, role, matricule) VALUES
+                                                                            ('michel.bernair@ecole.be', 'Bernair', 'Michel', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR', 'P-20001'),
+                                                                            ('jean-paul.hecquet@ecole.be', 'Hecquet', 'Jean-Paul', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR', 'P-20002'),
+                                                                            ('ali.jaghou@ecole.be', 'Jaghou', 'Ali', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR', 'P-20003'),
+                                                                            ('david.lemaire@ecole.be', 'Lemaire', 'David', '$2a$12$0aPcHqsZIIRMm0ZkuYe96e2gMLmW1V6zTqFUqKNLUiypSlAWxgMQa', 'ROLE_PROFESSEUR', 'P-20004');
 
 -- Insert etudiants (after utilisateur insertions)
 INSERT INTO etudiant (id, section_id, annee_section_id, info, photo) VALUES

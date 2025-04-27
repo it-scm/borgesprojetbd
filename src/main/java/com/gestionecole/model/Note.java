@@ -6,6 +6,10 @@ import lombok.NoArgsConstructor;
 import lombok.Setter;
 
 @Entity
+@Table(
+        name = "note",
+        uniqueConstraints = @UniqueConstraint(columnNames = {"etudiant_id", "cours_id"})
+)
 @Getter
 @Setter
 @NoArgsConstructor
@@ -14,20 +18,14 @@ public class Note {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    private Double premiereSession;
-    private Double deuxiemeSession;
-
     @ManyToOne
-    @JoinColumn(name = "etudiant_id")
+    @JoinColumn(name = "etudiant_id", nullable = false)
     private Etudiant etudiant;
 
     @ManyToOne
-    @JoinColumn(name = "cours_id")
+    @JoinColumn(name = "cours_id", nullable = false)
     private Cours cours;
 
-    @Override
-    public String toString() {
-        return "Note(premiereSession=" + getPremiereSession() +
-                ", deuxiemeSession=" + getDeuxiemeSession() + ")";
-    }
+    private Double premiereSession;
+    private Double deuxiemeSession;
 }

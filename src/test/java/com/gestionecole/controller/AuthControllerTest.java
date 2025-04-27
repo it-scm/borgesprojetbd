@@ -138,8 +138,9 @@ class AuthControllerTest {
         prof.setEmail("professeur@ecole.be");
         prof.setPassword(passwordEncoder.encode("professeur123"));
         prof.setRole("ROLE_PROFESSEUR");
-        prof.setMatricule("ABC123");
-        professeurRepository.save(prof);
+        prof.setMatricule("P-10001"); // 🔥 Matricule is set
+
+        professeurRepository.save(prof);  // 🔥 Then save child (Professeur)
 
         mockMvc.perform(formLogin("/auth/login")
                         .user("professeur@ecole.be")
@@ -147,6 +148,7 @@ class AuthControllerTest {
                 .andExpect(authenticated().withUsername("professeur@ecole.be"))
                 .andExpect(redirectedUrl("/professeur/cours"));
     }
+
 
     @Test
     void testLienInscriptionPresentSurLoginPage() throws Exception {
@@ -228,6 +230,19 @@ class AuthControllerTest {
         assertEquals("Télécom", updatedEtudiant.getSection().getNom());
     }
 
+    @Test
+    void showSchema() {
+        jdbcTemplate.query(
+                "SELECT COLUMN_NAME FROM INFORMATION_SCHEMA.COLUMNS WHERE TABLE_NAME = 'PROFESSEUR'",
+                (rs) -> {
+                    System.out.println("==== PROFESSEUR COLUMNS ====");
+                    while (rs.next()) {
+                        System.out.println(rs.getString("COLUMN_NAME"));
+                    }
+                    System.out.println("============================");
+                }
+        );
+    }
 
 }
 

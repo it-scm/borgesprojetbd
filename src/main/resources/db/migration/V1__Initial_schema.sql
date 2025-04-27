@@ -7,10 +7,12 @@ CREATE TABLE utilisateur (
                              id BIGSERIAL PRIMARY KEY,
                              nom VARCHAR(255) NOT NULL,
                              prenom VARCHAR(255) NOT NULL,
-                             email VARCHAR(255) NOT NULL UNIQUE,
+                             email VARCHAR(255) UNIQUE NOT NULL,
                              password VARCHAR(255) NOT NULL,
-                             role VARCHAR(50) NOT NULL
+                             role VARCHAR(255) NOT NULL,
+                             matricule VARCHAR(255) -- 🔥 add this field
 );
+
 
 CREATE TABLE section (
                          id BIGSERIAL PRIMARY KEY,
@@ -77,10 +79,12 @@ CREATE TABLE inscription (
 
 CREATE TABLE note (
                       id BIGSERIAL PRIMARY KEY,
+                      etudiant_id bigint NOT NULL,
+                      cours_id bigint NOT NULL,
                       premiere_session DOUBLE PRECISION,
                       deuxieme_session DOUBLE PRECISION,
-                      etudiant_id BIGINT,
-                      cours_id BIGINT,
+                      CONSTRAINT uk_note_etudiant_cours UNIQUE (etudiant_id, cours_id),
                       CONSTRAINT fk_note_etudiant FOREIGN KEY (etudiant_id) REFERENCES etudiant(id),
                       CONSTRAINT fk_note_cours FOREIGN KEY (cours_id) REFERENCES cours(id)
 );
+

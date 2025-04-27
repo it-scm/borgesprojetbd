@@ -1,10 +1,9 @@
 package com.gestionecole.model;
 
-import jakarta.persistence.Entity;
-import jakarta.persistence.JoinColumn;
-import jakarta.persistence.ManyToOne;
-import jakarta.persistence.OneToMany;
-import lombok.*;
+import jakarta.persistence.*;
+import lombok.Getter;
+import lombok.NoArgsConstructor;
+import lombok.Setter;
 
 import java.util.List;
 
@@ -12,6 +11,7 @@ import java.util.List;
 @Getter
 @Setter
 @NoArgsConstructor
+@PrimaryKeyJoinColumn(name = "id")
 public class Etudiant extends Utilisateur {
 
     @ManyToOne
@@ -23,6 +23,9 @@ public class Etudiant extends Utilisateur {
 
     @OneToMany(mappedBy = "etudiant")
     private List<Note> notes;
+
+    @Transient
+    private Note noteForCours;
 
     @ManyToOne
     @JoinColumn(name = "annee_section_id")
