@@ -58,14 +58,15 @@ CREATE TABLE cours (
 
 CREATE TABLE horaire (
                          id BIGSERIAL PRIMARY KEY,
-                         jour_semaine VARCHAR(20) NOT NULL,
+                         annee_section_id BIGINT NOT NULL,
+                         cours_id BIGINT NOT NULL,
                          heure_debut TIME NOT NULL,
                          heure_fin TIME NOT NULL,
-                         cours_id BIGINT,
-                         annee_section_id BIGINT,
-                         CONSTRAINT fk_horaire_cours FOREIGN KEY (cours_id) REFERENCES cours(id),
-                         CONSTRAINT fk_horaire_annee_section FOREIGN KEY (annee_section_id) REFERENCES annee_section(id)
+                         jour VARCHAR(50) NOT NULL,
+                         CONSTRAINT fk_horaire_annee_section FOREIGN KEY (annee_section_id) REFERENCES annee_section(id),
+                         CONSTRAINT fk_horaire_cours FOREIGN KEY (cours_id) REFERENCES cours(id)
 );
+
 
 CREATE TABLE inscription (
                              id BIGSERIAL PRIMARY KEY,

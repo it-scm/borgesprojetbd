@@ -50,8 +50,9 @@ INSERT INTO cours (code, intitule, description, credits, professeur_id) VALUES
 
 
 -- Insert schedules (horaires)
-INSERT INTO horaire (jour_semaine, heure_debut, heure_fin, cours_id, annee_section_id) VALUES
-    ('Lundi', '08:00:00', '10:00:00', 1, 1);
+INSERT INTO horaire (annee_section_id, cours_id, heure_debut, heure_fin, jour)
+VALUES (1, 2, '08:00:00', '10:00:00', 'Lundi');
+
 
 
 -- Insert into inscription (student enrollments)
