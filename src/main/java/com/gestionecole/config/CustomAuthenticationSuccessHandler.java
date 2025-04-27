@@ -1,10 +1,8 @@
 package com.gestionecole.config;
 
-import com.gestionecole.repository.EtudiantRepository;
 import jakarta.servlet.ServletException;
 import jakarta.servlet.http.HttpServletRequest;
 import jakarta.servlet.http.HttpServletResponse;
-import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.userdetails.UserDetails;
@@ -14,11 +12,8 @@ import org.springframework.stereotype.Component;
 import java.io.IOException;
 
 @Component
-@RequiredArgsConstructor
 @Slf4j
 public class CustomAuthenticationSuccessHandler implements AuthenticationSuccessHandler {
-
-    private final EtudiantRepository etudiantRepository;
 
     @Override
     public void onAuthenticationSuccess(HttpServletRequest request,
@@ -31,32 +26,26 @@ public class CustomAuthenticationSuccessHandler implements AuthenticationSuccess
             String email = userDetails.getUsername();
             log.debug("Authentication success for user: {}", email);
 
-            etudiantRepository.findByEmail(email).ifPresentOrElse(
-                    etudiant -> {
-                        try {
-                            if (etudiant.getSection() == null) {
-                                log.info("Etudiant sans section détecté : redirection vers la page d'inscription");
-                                response.sendRedirect(request.getContextPath() + "/auth/register");
-                            } else {
-                                log.info("Etudiant inscrit : redirection vers ses cours");
-                                response.sendRedirect(request.getContextPath() + "/etudiant/cours");
-                            }
-                        } catch (IOException e) {
-                            log.error("Erreur lors de la redirection après authentification", e);
-                        }
-                    },
-                    () -> {
-                        try {
-                            log.info("Professeur détecté : redirection vers ses cours");
-                            response.sendRedirect(request.getContextPath() + "/professeur/cours");
-                        } catch (IOException e) {
-                            log.error("Erreur lors de la redirection après authentification", e);
-                        }
-                    }
-            );
+            boolean isEtudiant = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_ETUDIANT"));
+
+            boolean isProfesseur = authentication.getAuthorities().stream()
+                    .anyMatch(auth -> auth.getAuthority().equals("ROLE_PROFESSEUR"));
+
+            if (isEtudiant) {
+                log.info("Redirection Etudiant vers /etudiant/cours");
+                response.sendRedirect(request.getContextPath() + "/etudiant/cours");
+            } else if (isProfesseur) {
+                log.info("Redirection Professeur vers /professeur/cours");
+                response.sendRedirect(request.getContextPath() + "/professeur/cours");
+            } else {
+                log.error("Utilisateur avec rôle inconnu : {}", authentication.getAuthorities());
+                response.sendRedirect(request.getContextPath() + "/auth/login?error=true");
+            }
         } else {
             log.error("Authentication principal n'est pas de type UserDetails : {}", principal.getClass().getName());
             response.sendRedirect(request.getContextPath() + "/auth/login?error=true");
         }
     }
+
 }
