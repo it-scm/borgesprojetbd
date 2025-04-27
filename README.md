@@ -1,8 +1,12 @@
 # 🎓 Gestion Scolaire - Projet de Gestion de Base de Données en Réseau
 
+---
+
 ## 📚 Description
 
-Gestion Scolaire est une application de gestion d'école
+Gestion Scolaire est une application web de gestion d'école construite avec des technologies modernes.
+
+---
 
 ## 🛠️ Technologies utilisées
 
@@ -14,6 +18,7 @@ Gestion Scolaire est une application de gestion d'école
 - **PostgreSQL 15**
 - **Docker & Docker Compose**
 - **Maven 3.9+**
+
 ---
 
 ## 🚀 Démarrage rapide
@@ -36,13 +41,13 @@ Gestion Scolaire est une application de gestion d'école
 createdb ecole_db
 ```
 
-**ou**
-
-Utiliser `psql` :
+**ou via psql** :
 ```bash
 psql -U postgres
 CREATE DATABASE ecole_db;
 ```
+
+---
 
 #### b) Vérifier la configuration `src/main/resources/application-dev.yml`
 
@@ -64,7 +69,7 @@ spring:
 ### 3. Lancer l'application dans IntelliJ
 
 1. Aller dans `Run -> Edit Configurations`.
-2. Ajouter dans les **Program arguments** :
+2. Ajouter dans **Program arguments** :
 
 ```text
 --spring.profiles.active=dev
@@ -72,15 +77,15 @@ spring:
 
 3. Lancer la classe `GestionScolaireApplication.java`.
 
-⚡ **À chaque démarrage** :
-- `flyway clean` et `flyway migrate` seront exécutés automatiquement.
-- La base est régénérée à partir des scripts SQL `db/migration/`.
+⚡ À chaque démarrage :
+- Flyway `clean` + `migrate` se lance automatiquement.
+- La base est régénérée à partir des scripts SQL (`db/migration`).
 
 ---
 
 ### 4. Utilisateurs prédéfinis
 
-**Tous les utilisateurs ont le **même mot de passe** : `Pass1234`**
+Tous les utilisateurs utilisent le mot de passe **`Pass1234`**.
 
 #### Étudiants
 ```
@@ -122,7 +127,29 @@ david.lemaire@ecole.be
 
 # 🐳 Lancer avec Docker et Docker Compose
 
-### 1. Docker Compose File (exemple `docker-compose.yml`)
+## 1. Installer Docker et Docker Compose sur Windows
+
+Si tu n'as pas encore installé Docker :
+
+- Télécharge Docker Desktop pour Windows : [https://www.docker.com/products/docker-desktop/](https://www.docker.com/products/docker-desktop/)
+- Installe-le en suivant l'assistant d'installation.
+- Active l'intégration WSL 2 (Docker propose l'activation automatique).
+- Redémarre ton PC si nécessaire.
+
+Après installation :
+```bash
+docker --version
+docker-compose --version
+```
+Ces deux commandes doivent fonctionner.
+
+Docker Compose est inclus nativement dans Docker Desktop depuis les dernières versions.
+
+---
+
+## 2. Lancer PostgreSQL avec Docker Compose
+
+Créer un fichier `docker-compose.yml` :
 
 ```yaml
 version: '3.8'
@@ -145,7 +172,7 @@ volumes:
   pgdata:
 ```
 
-### 2. Lancer la base
+Puis exécuter :
 
 ```bash
 docker-compose up -d
@@ -156,35 +183,29 @@ docker-compose up -d
 - **User** : `postgres`
 - **Password** : `postgres`
 
-### 3. Lancer l'application Spring Boot
-Comme précédemment dans IntelliJ avec profil `dev`.
+---
+
+## 3. Lancer l'application Spring Boot
+
+Depuis IntelliJ, toujours avec :
+
+```text
+--spring.profiles.active=dev
+```
+
+La connexion se fera directement sur la base PostgreSQL Dockerisée.
 
 ---
 
 ## 🎯 Bonnes pratiques
 
 - Toujours utiliser `--spring.profiles.active=dev` en local.
-- Ne jamais désactiver `flyway.clean-disabled` en production !
-- Utiliser la base Dockerisée pour éviter d'impacter ton PostgreSQL local.
-- Contrôler les logs au démarrage (`INFO`, `DEBUG`) pour détecter les erreurs Flyway, Hibernate, Spring Security.
-
----
-
-
-## 🛠️ Technologies utilisées
-
-- **Spring Boot 3.2.x**
-- **Spring Security**
-- **Spring Data JPA**
-- **Thymeleaf**
-- **Flyway 10**
-- **PostgreSQL 15**
-- **Docker & Docker Compose**
-- **Maven 3.9+**
+- Ne jamais désactiver `flyway.clean-disabled: true` en production !
+- Utiliser Docker pour isoler ta base sans polluer ton OS.
+- Contrôler les logs de démarrage pour corriger rapidement d'éventuelles erreurs Flyway ou Hibernate.
 
 ---
 
 ## 📜 Licence
 
 Projet éducatif sous licence libre pour démonstration et apprentissage.
-
