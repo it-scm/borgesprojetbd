@@ -23,9 +23,9 @@
         <tbody>
         <tr th:each="horaire : ${horaires}">
             <td th:text="${horaire.jour}"></td>
-            <td th:text="${horaire.heure}"></td>
-            <td th:text="${horaire.cours.nom}"></td>
-            <td th:text="${horaire.anneeSection.section.nom}"></td>
+            <td th:text="${horaire.heureDebut + ' - ' + horaire.heureFin}"></td> <!-- heureDebut + heureFin -->
+            <td th:text="${horaire.cours.intitule}"></td> <!-- cours.intitule instead of cours.nom -->
+            <td th:text="${horaire.anneeSection.section.nom}"></td> <!-- OK if needed -->
         </tr>
         </tbody>
     </table>
