@@ -4,6 +4,7 @@ import com.gestionecole.model.Etudiant;
 import com.gestionecole.model.Section;
 import com.gestionecole.repository.EtudiantRepository;
 import com.gestionecole.repository.SectionRepository;
+import com.gestionecole.model.Roles;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
@@ -36,6 +37,18 @@ public class EtudiantService {
         return etudiantRepository.findByEmail(email);
     }
 
+    @Transactional(readOnly = true)
+    public Optional<Etudiant> getEtudiantWithSectionByEmail(String email) {
+        return etudiantRepository.findWithSectionByEmail(email);
+    }
+
+
+    public boolean isEtudiantInscrit(String email) {
+        return etudiantRepository.findByEmail(email)
+                .map(Etudiant::isInscrit)
+                .orElse(false);
+    }
+
     @Transactional
     public void registerStudent(Etudiant etudiant, Long sectionId) {
         Section section = sectionRepository.findById(sectionId)
@@ -48,7 +61,7 @@ public class EtudiantService {
 
         etudiant.setPassword(passwordEncoder.encode(etudiant.getPassword()));
         etudiant.setSection(section);
-        etudiant.setRole("student");
+        etudiant.setRole(Roles.ETUDIANT);
         etudiantRepository.save(etudiant);
     }
 
@@ -62,5 +75,9 @@ public class EtudiantService {
 
     public int countEtudiantsInSection(Long sectionId) {
         return etudiantRepository.countBySectionId(sectionId);
+    }
+
+    public void save(Etudiant existingEtudiant) {
+        etudiantRepository.save(existingEtudiant);
     }
 }

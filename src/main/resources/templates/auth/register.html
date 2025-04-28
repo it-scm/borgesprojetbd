@@ -11,6 +11,26 @@
 <div class="container mt-5">
     <h2 class="text-center mb-4">Inscription Étudiant</h2>
 
+    <div class="container mt-5">
+        <h2 class="text-center mb-4">Inscription Étudiant</h2>
+
+        <!-- 🔥 Email error block -->
+        <div th:if="${emailError}" class="alert alert-danger" role="alert">
+            <span th:text="${emailError}"></span>
+        </div>
+
+        <!-- 🔥 Section error block -->
+        <div th:if="${sectionError}" class="alert alert-danger" role="alert">
+            <span th:text="${sectionError}"></span>
+        </div>
+
+        <form th:action="@{/auth/register}" th:object="${etudiant}" method="post" class="mx-auto" style="max-width: 500px;">
+            <!-- your form fields -->
+        </form>
+    </div>
+
+
+
     <form th:action="@{/auth/register}" th:object="${etudiant}" method="post" class="mx-auto" style="max-width: 500px;">
 
         <div class="mb-3">

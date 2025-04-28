@@ -1,7 +1,6 @@
 package com.gestionecole.controller;
 
 import com.gestionecole.model.Etudiant;
-import com.gestionecole.model.Section;
 import com.gestionecole.service.EtudiantService;
 import com.gestionecole.service.SectionService;
 import jakarta.validation.Valid;
@@ -30,45 +29,42 @@ public class AuthController {
         return "auth/login";
     }
 
+    // Public registration for new students
     @GetMapping("/auth/register")
     public String registerForm(Model model) {
-        model.addAttribute("etudiant", new Etudiant());
-        model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+        model.addAttribute("etudiant", new Etudiant());  // 🔥 empty form for new Etudiant
+        model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
         return "auth/register";
     }
 
     @PostMapping("/auth/register")
     public String register(
-            @Valid @ModelAttribute("etudiant") Etudiant etudiant,
+            @Valid @ModelAttribute("etudiant") Etudiant formEtudiant,
             BindingResult result,
-            Model model,
             @RequestParam("sectionId") Long sectionId,
+            Model model,
             RedirectAttributes redirectAttributes
     ) {
-        Section section = sectionService.getSectionById(sectionId)
-                .orElseThrow(() -> new IllegalStateException("Section non trouvée"));
-
-        int placesRestantes = section.getNbPlaces() - etudiantService.countEtudiantsInSection(sectionId);
-
         if (result.hasErrors()) {
-            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             return "auth/register";
         }
 
-        if (!etudiant.getEmail().matches("^[a-zA-Z]+\\.[a-zA-Z]+@ecole\\.be$")) {
-            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
+        if (!formEtudiant.getEmail().matches("^[a-zA-Z]+\\.[a-zA-Z]+@ecole\\.be$")) {
+            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             model.addAttribute("emailError", "Le format de l'email doit être prenom.nom@ecole.be");
             return "auth/register";
         }
 
         try {
-            etudiantService.registerStudent(etudiant, sectionId);
-            redirectAttributes.addFlashAttribute("successMessage", "Inscription réussie ! Veuillez vous connecter.");
-            return "redirect:/auth/login";
+            etudiantService.registerStudent(formEtudiant, sectionId);
         } catch (IllegalStateException e) {
-            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces()); // ✅ corrigé
-            model.addAttribute("errorMessage", e.getMessage());
+            model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
+            model.addAttribute("sectionError", e.getMessage());
             return "auth/register";
         }
+
+        redirectAttributes.addFlashAttribute("successMessage", "Inscription réussie ! Veuillez vous connecter.");
+        return "redirect:/auth/login";
     }
 }

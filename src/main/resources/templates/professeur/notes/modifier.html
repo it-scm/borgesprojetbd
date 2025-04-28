@@ -14,22 +14,24 @@
     <h3>Cours : <span th:text="${note.cours.intitule}"></span></h3>
 
     <form th:action="@{/professeur/notes/modifier}" method="post" th:object="${note}">
-        <input type="hidden" th:field="*{etudiant.id}" name="etudiantId">
-        <input type="hidden" th:field="*{cours.id}" name="coursId">
+        <input type="hidden" th:field="*{etudiant.id}" />
+        <input type="hidden" th:field="*{cours.id}" />
 
         <div class="mb-3">
             <label for="premiereSession" class="form-label">Note de la Première Session</label>
-            <input type="number" class="form-control" id="premiereSession" th:field="*{premiereSession}" name="premiereSession" step="0.5" />
+            <input type="number" class="form-control" id="premiereSession" th:field="*{premiereSession}" step="0.5" />
         </div>
 
         <div class="mb-3">
             <label for="deuxiemeSession" class="form-label">Note de la Deuxième Session</label>
-            <input type="number" class="form-control" id="deuxiemeSession" th:field="*{deuxiemeSession}" name="deuxiemeSession" step="0.5" />
-            <div th:if="${errorMessage}" class="alert alert-danger" th:text="${errorMessage}"></div>
+            <input type="number" class="form-control" id="deuxiemeSession" th:field="*{deuxiemeSession}" step="0.5" />
         </div>
 
         <button type="submit" class="btn btn-primary">Enregistrer</button>
     </form>
+
+
+
 </div>
 
 <div th:replace="fragments/footer :: footer"></div>

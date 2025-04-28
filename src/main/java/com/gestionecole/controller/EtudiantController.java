@@ -40,13 +40,18 @@ public class EtudiantController {
     public String voirHoraire(Model model) {
         String email = getCurrentUserEmail();
         etudiantService.getEtudiantByEmail(email).ifPresent(etudiant -> {
-            model.addAttribute("horaires", horaireService.getHoraireBySectionAndAnnee(
-                    etudiant.getAnneeSection().getSection().getNom(),
-                    etudiant.getAnneeSection().getAnneeAcademique()
-            ));
+            if (etudiant.getAnneeSection() != null && etudiant.getAnneeSection().getSection() != null) {
+                model.addAttribute("horaires", horaireService.getHoraireBySectionAndAnnee(
+                        etudiant.getAnneeSection().getSection().getNom(),
+                        etudiant.getAnneeSection().getAnneeAcademique()
+                ));
+            } else {
+                model.addAttribute("horaires", null); // or empty list if you prefer
+            }
         });
         return "etudiant/horaire";
     }
+
 
     @GetMapping("/note")
     public String voirNotes(Model model) {

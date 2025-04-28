@@ -7,7 +7,7 @@
     <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet">
 </head>
 <body>
-<div th:replace="fragments/header :: header"></div>
+<div th:replace="~{fragments/header :: header}"></div>
 
 <div class="container">
     <h2>Liste des Étudiants pour le Cours: <span th:text="${cours.intitule}"></span></h2>
@@ -18,6 +18,8 @@
             <th>Nom</th>
             <th>Prénom</th>
             <th>Email</th>
+            <th>Première Session</th> <!-- ✅ Added -->
+            <th>Deuxième Session</th> <!-- ✅ Added -->
             <th>Action</th>
         </tr>
         </thead>
@@ -27,15 +29,21 @@
             <td th:text="${etudiant.nom}"></td>
             <td th:text="${etudiant.prenom}"></td>
             <td th:text="${etudiant.email}"></td>
+
+            <!-- ✅ Corrected: use notes[etudiant.id] -->
+            <td th:text="${notes[etudiant.id] != null ? notes[etudiant.id].premiereSession : '—'}"></td>
+            <td th:text="${notes[etudiant.id] != null ? notes[etudiant.id].deuxiemeSession : '—'}"></td>
+
             <td>
                 <a th:href="@{/professeur/notes/modifier/{etudiantId}/{coursId}(etudiantId=${etudiant.id}, coursId=${cours.id})}" class="btn btn-primary">Modifier Note</a>
             </td>
         </tr>
         </tbody>
+
     </table>
 </div>
 
-<div th:replace="fragments/footer :: footer"></div>
+<div th:replace="~{fragments/footer :: footer}"></div>
 <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
 </body>
 </html>

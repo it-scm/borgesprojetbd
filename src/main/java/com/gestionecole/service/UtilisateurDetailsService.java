@@ -1,37 +1,52 @@
 package com.gestionecole.service;
 
 import com.gestionecole.model.Utilisateur;
-import com.gestionecole.repository.UtilisateurRepository;
+import com.gestionecole.repository.EtudiantRepository;
+import com.gestionecole.repository.ProfesseurRepository;
+import lombok.extern.slf4j.Slf4j;
+import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.core.userdetails.User;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UserDetailsService;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.stereotype.Service;
 
+import java.util.regex.Pattern;
+
+@Slf4j
 @Service
 public class UtilisateurDetailsService implements UserDetailsService {
 
-    private final UtilisateurRepository utilisateurRepository;
+    private final EtudiantRepository etudiantRepository;
+    private final ProfesseurRepository professeurRepository;
 
-    public UtilisateurDetailsService(UtilisateurRepository utilisateurRepository) {
-        this.utilisateurRepository = utilisateurRepository;
+    private static final Pattern EMAIL_PATTERN = Pattern.compile("^[\\w.%+-]+@[\\w.-]+\\.[A-Za-z]{2,6}$");
+
+
+    public UtilisateurDetailsService(EtudiantRepository etudiantRepository,
+                                     ProfesseurRepository professeurRepository) {
+        this.etudiantRepository = etudiantRepository;
+        this.professeurRepository = professeurRepository;
     }
 
     @Override
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+        log.debug("loadUserByUsername - retrouve l'utilisateur par email: {}", email);
+
+        if (!EMAIL_PATTERN.matcher(email).matches()) {
+            log.warn("Tentative de connexion avec un email invalide : {}", email);
+            throw new BadCredentialsException("Format de l'adresse email invalide");
+        }
+
+        Utilisateur utilisateur = etudiantRepository.findByEmail(email)
+                .map(u -> (Utilisateur) u)
+                .or(() -> professeurRepository.findByEmail(email).map(u -> (Utilisateur) u))
                 .orElseThrow(() -> new UsernameNotFoundException("Utilisateur non trouvé"));
 
-        User.UserBuilder userBuilder = User.withUsername(utilisateur.getEmail());
-        userBuilder.password(utilisateur.getPassword());
-
-        // ✅ Supprimer le préfixe "ROLE_" si déjà présent
-        String role = utilisateur.getRole();
-        if (role.startsWith("ROLE_")) {
-            role = role.substring(5);
-        }
-        userBuilder.roles(role);
-
-        return userBuilder.build();
+        return User.withUsername(utilisateur.getEmail())
+                .password(utilisateur.getPassword())
+                .roles(utilisateur.getRole().replaceFirst("^ROLE_", ""))
+                .build();
     }
 }
+

@@ -3,8 +3,6 @@ package com.gestionecole.config;
 import com.gestionecole.service.UtilisateurDetailsService;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.security.authentication.AuthenticationManager;
-import org.springframework.security.config.annotation.authentication.configuration.AuthenticationConfiguration;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.annotation.web.configuration.EnableWebSecurity;
 import org.springframework.security.config.annotation.web.configurers.HeadersConfigurer;
@@ -19,9 +17,15 @@ import org.springframework.web.servlet.handler.HandlerMappingIntrospector;
 public class SecurityConfig {
 
     private final UtilisateurDetailsService utilisateurDetailsService;
+    private final CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler;
+    private final CustomAuthenticationFailureHandler customAuthenticationFailureHandler;
 
-    public SecurityConfig(UtilisateurDetailsService utilisateurDetailsService) {
+    public SecurityConfig(UtilisateurDetailsService utilisateurDetailsService,
+                          CustomAuthenticationSuccessHandler customAuthenticationSuccessHandler,
+                          CustomAuthenticationFailureHandler customAuthenticationFailureHandler) {
         this.utilisateurDetailsService = utilisateurDetailsService;
+        this.customAuthenticationSuccessHandler = customAuthenticationSuccessHandler;
+        this.customAuthenticationFailureHandler = customAuthenticationFailureHandler;
     }
 
     @Bean
@@ -30,17 +34,11 @@ public class SecurityConfig {
     }
 
     @Bean
-    public AuthenticationManager authenticationManager(AuthenticationConfiguration authConfig) throws Exception {
-        return authConfig.getAuthenticationManager();
-    }
-
-    @Bean
     public SecurityFilterChain securityFilterChain(HttpSecurity http, HandlerMappingIntrospector introspector) throws Exception {
-
-        MvcRequestMatcher h2RequestMatcher = new MvcRequestMatcher(introspector, "/h2-console/**");
+        MvcRequestMatcher h2Matcher = new MvcRequestMatcher(introspector, "/h2-console/**");
 
         http
-                .csrf(csrf -> csrf.ignoringRequestMatchers(h2RequestMatcher))
+                .csrf(csrf -> csrf.ignoringRequestMatchers(h2Matcher))
                 .headers(headers -> headers.frameOptions(HeadersConfigurer.FrameOptionsConfig::disable))
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers("/auth/**", "/css/**", "/static/**").permitAll()
@@ -50,7 +48,9 @@ public class SecurityConfig {
                 )
                 .formLogin(form -> form
                         .loginPage("/auth/login")
-                        .defaultSuccessUrl("/home", true)
+                        .loginProcessingUrl("/auth/login")
+                        .successHandler(customAuthenticationSuccessHandler)
+                        .failureHandler(customAuthenticationFailureHandler)
                         .permitAll()
                 )
                 .logout(logout -> logout

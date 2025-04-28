@@ -12,9 +12,18 @@
     <h2 class="text-center mb-4">Connexion</h2>
 
     <form th:action="@{/auth/login}" method="post" class="mx-auto" style="max-width: 400px;">
+        <input type="hidden" th:name="${_csrf.parameterName}" th:value="${_csrf.token}" />
+
+        <div th:if="${param.error}" class="alert alert-danger text-center">
+            Adresse e-mail ou mot de passe incorrect.
+        </div>
+        <div th:if="${param.logout}" class="alert alert-success text-center">
+            Déconnexion réussie.
+        </div>
+
         <div class="mb-3">
             <label for="email" class="form-label">Email</label>
-            <input type="email" class="form-control" id="email" name="username" required>
+            <input type="text" class="form-control" id="email" name="username" required>
         </div>
         <div class="mb-3">
             <label for="password" class="form-label">Mot de passe</label>
@@ -24,6 +33,7 @@
             <button type="submit" class="btn btn-primary">Se connecter</button>
         </div>
     </form>
+
 
     <div class="text-center mt-3">
         Pas de compte ? <a th:href="@{/auth/register}">S’inscrire</a>

@@ -1,15 +1,15 @@
 package com.gestionecole.model;
 
 import jakarta.persistence.*;
-import lombok.Getter;
-import lombok.NoArgsConstructor;
-import lombok.Setter;
+import lombok.*;
 
 import java.util.List;
 
 @Entity
 @Getter
 @Setter
+@Builder
+@AllArgsConstructor
 @NoArgsConstructor
 public class Section {
     @Id
@@ -31,5 +31,10 @@ public class Section {
     public Section(String nom, int nbPlaces) {
         this.nom = nom;
         this.nbPlaces = nbPlaces;
+    }
+
+    @Override
+    public String toString() {
+        return "Section(nom=" + nom + ", nbPlaces=" + nbPlaces + ")";
     }
 }

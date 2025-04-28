@@ -20,14 +20,14 @@ public class AnneeSection {
     @JoinColumn(name = "section_id")
     private Section section;
 
-    // Constructors, Getters, Setters
-    // public AnneeSection() { // Supprimez ce constructeur si vous utilisez @NoArgsConstructor
-    // }
 
     public AnneeSection(String anneeAcademique, Section section) {
         this.anneeAcademique = anneeAcademique;
         this.section = section;
     }
 
-    // ... (autres méthodes)
+    @Override
+    public String toString() {
+        return "AnneeSection(anneeAcademique=" + getAnneeAcademique() + ")";
+    }
 }
