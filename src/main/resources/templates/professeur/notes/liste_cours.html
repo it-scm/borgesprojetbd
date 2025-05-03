@@ -13,7 +13,7 @@
     <h2>Sélectionner un Cours pour les Notes</h2>
     <ul class="list-group">
         <li class="list-group-item" th:each="cours : ${cours}">
-            <a th:href="@{/professeur/notes/{coursId}/etudiants(coursId=${cours.id})}" th:text="${cours.intitule}"></a>
+            <a th:href="@{/professeur/notes/{id}(id=${cours.id})}" th:text="${cours.intitule}"></a>
         </li>
     </ul>
 </div>

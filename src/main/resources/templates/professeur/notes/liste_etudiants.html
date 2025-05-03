@@ -10,6 +10,10 @@
 <div th:replace="~{fragments/header :: header}"></div>
 
 <div class="container">
+    <p></p>
+    <div th:if="${errorMessage}" class="alert alert-danger text-center" role="alert">
+        <span th:text="${errorMessage}"></span>
+    </div>
     <h2>Liste des Étudiants pour le Cours: <span th:text="${cours.intitule}"></span></h2>
     <table class="table">
         <thead>

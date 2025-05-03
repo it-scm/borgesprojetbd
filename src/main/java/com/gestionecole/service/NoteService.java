@@ -75,9 +75,10 @@ public class NoteService {
 
     @Transactional
     public void createOrUpdateNote(Note note) {
-        Optional<Note> existingNoteOpt = noteRepository.findByEtudiant_IdAndCours_Id(
-                note.getEtudiant().getId(), note.getCours().getId()
-        );
+        Long etudiantId = note.getEtudiant().getId();
+        Long coursId = note.getCours().getId();
+
+        Optional<Note> existingNoteOpt = noteRepository.findByEtudiant_IdAndCours_Id(etudiantId, coursId);
 
         Note noteToSave = existingNoteOpt.orElseGet(() -> {
             Note newNote = new Note();
@@ -86,12 +87,21 @@ public class NoteService {
             return newNote;
         });
 
-        noteToSave.setPremiereSession(note.getPremiereSession());
-        noteToSave.setDeuxiemeSession(note.getDeuxiemeSession());
+        // 🔐 Business rule: Deuxième session requires première session
+        if (note.getDeuxiemeSession() != null &&
+                (noteToSave.getPremiereSession() == null && note.getPremiereSession() == null)) {
+            throw new IllegalStateException("Impossible d’ajouter une note en deuxième session sans note en première session.");
+        }
+
+        // Update sessions if provided
+        if (note.getPremiereSession() != null) {
+            noteToSave.setPremiereSession(note.getPremiereSession());
+        }
+        if (note.getDeuxiemeSession() != null) {
+            noteToSave.setDeuxiemeSession(note.getDeuxiemeSession());
+        }
 
         noteRepository.save(noteToSave);
     }
-
-
 
 }

@@ -1,8 +1,6 @@
 package com.gestionecole.controller;
 
-import com.gestionecole.model.Etudiant;
-import com.gestionecole.model.Professeur;
-import com.gestionecole.model.Section;
+import com.gestionecole.model.*;
 import com.gestionecole.repository.*;
 import jakarta.persistence.EntityManager;
 import org.hamcrest.Matchers;
@@ -18,11 +16,16 @@ import org.springframework.test.context.ActiveProfiles;
 import org.springframework.test.web.servlet.MockMvc;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.util.List;
+
+import static org.assertj.core.api.Assertions.assertThat;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestBuilders.formLogin;
+import static org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf;
 import static org.springframework.security.test.web.servlet.response.SecurityMockMvcResultMatchers.authenticated;
 import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.get;
+import static org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post;
 import static org.springframework.test.web.servlet.result.MockMvcResultMatchers.*;
 
 @SpringBootTest
@@ -42,6 +45,8 @@ class AuthControllerTest {
     @Autowired private PasswordEncoder passwordEncoder;
     @Autowired private HoraireRepository horaireRepository;
     @Autowired private JdbcTemplate jdbcTemplate;
+    @Autowired private AnneeSectionRepository anneeSectionRepository;
+    @Autowired private InscriptionRepository inscriptionRepository;
 
 
     @BeforeEach
@@ -156,40 +161,64 @@ class AuthControllerTest {
 
 
     @Test
-    void testRegisterEtudiantSuccess() throws Exception {
+    void testRegisterEtudiantViaFormCreatesMatriculeAndInscriptions() throws Exception {
         // Arrange
-        Section section = new Section("Informatique", 30);
+        Section section = new Section("Cybersécurité", 20);
         sectionRepository.save(section);
 
-        // Act
-        mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
-                                .param("nom", "Martin")
-                                .param("prenom", "Bob")
-                                .param("email", "bob.martin@ecole.be")
-                                .param("password", "Pass1234")
-                                .param("sectionId", section.getId().toString())
-                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf()) // 🔥 Needed for POST
-                )
+        String academicYear = "2024-2025";
+
+        AnneeSection anneeSection = new AnneeSection(academicYear, section);
+        anneeSectionRepository.save(anneeSection);
+
+        Cours cours = new Cours();
+        cours.setIntitule("Sécurité Réseau");
+        coursRepository.save(cours);
+
+        Horaire horaire = new Horaire();
+        horaire.setJour("VENDREDI");
+        horaire.setHeureDebut("10:00");
+        horaire.setHeureFin("12:00");
+        horaire.setCours(cours);
+        horaire.setAnneeSection(anneeSection);
+        horaireRepository.save(horaire);
+
+        // Act: Submit registration form
+        mockMvc.perform(post("/auth/register")
+                        .param("nom", "Jean")
+                        .param("prenom", "Valjean")
+                        .param("email", "jean.valjean@ecole.be")
+                        .param("password", "Valjean123")
+                        .param("sectionId", section.getId().toString())
+                        .with(csrf()))
                 .andExpect(status().is3xxRedirection())
                 .andExpect(redirectedUrl("/auth/login"));
 
-        // Assert: verify student is created
-        Etudiant savedEtudiant = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow();
-        assertTrue(passwordEncoder.matches("Pass1234", savedEtudiant.getPassword()));
-        assertNotNull(savedEtudiant.getSection());
+        // Assert: Verify Etudiant saved
+        Etudiant saved = etudiantRepository.findByEmail("jean.valjean@ecole.be").orElseThrow();
+
+        assertThat(saved.getMatricule()).matches("E-\\d{5}");
+        assertThat(passwordEncoder.matches("Valjean123", saved.getPassword())).isTrue();
+        assertThat(saved.getSection()).isEqualTo(section);
+        assertThat(saved.getAnneeSection().getAnneeAcademique()).isEqualTo(academicYear);
+
+        List<Inscription> inscriptions = inscriptionRepository.findByEtudiant(saved);
+        assertThat(inscriptions).hasSize(1);
+        assertThat(inscriptions.get(0).getCours().getIntitule()).isEqualTo("Sécurité Réseau");
     }
+
+
 
     @Test
     void testRegisterEtudiantValidationError() throws Exception {
         mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                        post("/auth/register")
                                 .param("nom", "") // Empty name -> validation error
                                 .param("prenom", "Bob")
                                 .param("email", "bob.martin@ecole.be")
                                 .param("password", "Pass1234")
                                 .param("sectionId", "1") // even if sectionId is OK
-                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                                .with(csrf())
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/register"))
@@ -223,13 +252,13 @@ class AuthControllerTest {
         sectionRepository.save(section);
 
         mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                        post("/auth/register")
                                 .param("nom", "Bob")
                                 .param("prenom", "Martin")
                                 .param("email", "bobmartin@gmail.com") // Wrong format
                                 .param("password", "Pass1234")
                                 .param("sectionId", section.getId().toString())
-                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                                .with(csrf())
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/register"))
@@ -256,13 +285,13 @@ class AuthControllerTest {
 
         // Act
         mockMvc.perform(
-                        org.springframework.test.web.servlet.request.MockMvcRequestBuilders.post("/auth/register")
+                        post("/auth/register")
                                 .param("nom", "Jane")
                                 .param("prenom", "Doe")
                                 .param("email", "jane.doe@ecole.be")
                                 .param("password", "password")
                                 .param("sectionId", section.getId().toString())
-                                .with(org.springframework.security.test.web.servlet.request.SecurityMockMvcRequestPostProcessors.csrf())
+                                .with(csrf())
                 )
                 .andExpect(status().isOk())
                 .andExpect(view().name("auth/register"))

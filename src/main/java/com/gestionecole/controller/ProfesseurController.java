@@ -13,6 +13,7 @@ import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.*;
+import org.springframework.web.servlet.mvc.support.RedirectAttributes;
 
 import java.util.HashMap;
 import java.util.List;
@@ -109,19 +110,22 @@ public class ProfesseurController {
     }
 
     @PostMapping("/notes/modifier")
-    public String enregistrerNote(@ModelAttribute("note") Note note, Model model) {
+    public String enregistrerNote(@ModelAttribute("note") Note note,
+                                  RedirectAttributes redirectAttributes) {
         if (note.getEtudiant() == null || note.getEtudiant().getId() == null
                 || note.getCours() == null || note.getCours().getId() == null) {
-            throw new IllegalStateException("Note missing Etudiant or Cours information");
+            redirectAttributes.addFlashAttribute("errorMessage", "Note incomplète : étudiant ou cours manquant.");
+            return "redirect:/professeur/notes/" + (note.getCours() != null ? note.getCours().getId() : "");
         }
 
-        noteService.createOrUpdateNote(note);
+        try {
+            noteService.createOrUpdateNote(note);
+        } catch (IllegalStateException e) {
+            redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
+            return "redirect:/professeur/notes/" + note.getCours().getId();
+        }
 
         return "redirect:/professeur/notes/" + note.getCours().getId();
     }
-
-
-
-
 
 }

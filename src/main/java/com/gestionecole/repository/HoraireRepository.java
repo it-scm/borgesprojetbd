@@ -7,4 +7,5 @@ import java.util.List;
 
 public interface HoraireRepository extends JpaRepository<Horaire, Long> {
     List<Horaire> findByAnneeSection_Section_NomAndAnneeSection_AnneeAcademique(String sectionNom, String anneeAcademique);
+    List<Horaire> findByAnneeSectionId(Long id);
 }
