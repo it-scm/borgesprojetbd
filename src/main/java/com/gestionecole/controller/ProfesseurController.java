@@ -1,13 +1,7 @@
 package com.gestionecole.controller;
 
-import com.gestionecole.model.Cours;
-import com.gestionecole.model.Etudiant;
-import com.gestionecole.model.Note;
-import com.gestionecole.model.Professeur;
-import com.gestionecole.service.CoursService;
-import com.gestionecole.service.HoraireService;
-import com.gestionecole.service.NoteService;
-import com.gestionecole.service.ProfesseurService;
+import com.gestionecole.model.*; // Import all models
+import com.gestionecole.service.*; // Import all services
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
 import org.springframework.stereotype.Controller;
@@ -27,12 +21,18 @@ public class ProfesseurController {
     private final CoursService coursService;
     private final HoraireService horaireService;
     private final NoteService noteService;
+    private final InscriptionService inscriptionService; // Added
 
-    public ProfesseurController(ProfesseurService professeurService, CoursService coursService, HoraireService horaireService, NoteService noteService) {
+    public ProfesseurController(ProfesseurService professeurService,
+                                CoursService coursService,
+                                HoraireService horaireService,
+                                NoteService noteService,
+                                InscriptionService inscriptionService) { // Added
         this.professeurService = professeurService;
         this.coursService = coursService;
         this.horaireService = horaireService;
         this.noteService = noteService;
+        this.inscriptionService = inscriptionService; // Added
     }
 
     @GetMapping("/cours")
@@ -74,10 +74,11 @@ public class ProfesseurController {
     public String listeEtudiantsPourCours(@PathVariable Long coursId, Model model) {
         Cours cours = coursService.getCoursById(coursId).orElse(null);
         if (cours != null) {
-            List<Etudiant> etudiants = noteService.getEtudiantsInscritsAuCours(cours);
+            List<Etudiant> etudiants = noteService.getEtudiantsInscritsAuCours(cours); // This service method was updated
             Map<Long, Note> notes = new HashMap<>();
             for (Etudiant etudiant : etudiants) {
-                noteService.getNoteByEtudiantAndCours(etudiant.getId(), cours.getId())
+                // Use the new service method that takes Etudiant and Cours objects
+                noteService.getNoteByEtudiantAndCours(etudiant, cours)
                         .ifPresent(note -> notes.put(etudiant.getId(), note));
             }
             model.addAttribute("cours", cours);
@@ -90,42 +91,74 @@ public class ProfesseurController {
 
     @GetMapping("/notes/modifier/{etudiantId}/{coursId}")
     public String modifierNoteForm(@PathVariable Long etudiantId, @PathVariable Long coursId, Model model) {
-        Note note = noteService.getNoteByEtudiantAndCours(etudiantId, coursId).orElseGet(() -> {
+        Etudiant etudiant = noteService.findEtudiantById(etudiantId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid etudiant Id:" + etudiantId));
+        Cours cours = coursService.getCoursById(coursId)
+                .orElseThrow(() -> new IllegalArgumentException("Invalid cours Id:" + coursId));
+
+        Note note = noteService.getNoteByEtudiantAndCours(etudiant, cours).orElseGet(() -> {
             Note nouvelleNote = new Note();
-            Etudiant etudiant = new Etudiant();
-            etudiant.setId(etudiantId);
-            etudiant.setNom("Etudiant inconnu"); // 🔥 Placeholder value to avoid Thymeleaf error
-            etudiant.setPrenom("");              // 🔥
-            Cours cours = new Cours();
-            cours.setId(coursId);
-            cours.setIntitule("Cours inconnu");  // 🔥 Placeholder too
-            nouvelleNote.setEtudiant(etudiant);
-            nouvelleNote.setCours(cours);
+            // We pass Etudiant and Cours to the model for the form to use,
+            // the Inscription will be resolved on POST.
+            // For display, we can set them directly on a transient Note if needed by the form,
+            // but the Note object sent to createOrUpdateNote must have Inscription.
+            // The form should primarily submit etudiantId, coursId, and note values.
+            nouvelleNote.setCours(cours); // For form display
+            // Create a placeholder Inscription with the Etudiant for form display
+            Inscription placeholderInscription = new Inscription();
+            placeholderInscription.setEtudiant(etudiant);
+            nouvelleNote.setInscription(placeholderInscription); // For form display (note.inscription.etudiant.nom)
             return nouvelleNote;
         });
 
-        model.addAttribute("note", note);
-        model.addAttribute("coursId", coursId);
+        model.addAttribute("note", note); // note.inscription.etudiant will be available if note exists
+        model.addAttribute("etudiant", etudiant); // Explicitly add etudiant for form if note is new
+        model.addAttribute("cours", cours); // Explicitly add cours for form
+        // The form should submit etudiantId and coursId along with note values.
         return "professeur/notes/modifier";
     }
 
     @PostMapping("/notes/modifier")
-    public String enregistrerNote(@ModelAttribute("note") Note note,
+    public String enregistrerNote(@RequestParam Long etudiantId,
+                                  @RequestParam Long coursId,
+                                  @RequestParam(required = false) Double premiereSession,
+                                  @RequestParam(required = false) Double deuxiemeSession,
                                   RedirectAttributes redirectAttributes) {
-        if (note.getEtudiant() == null || note.getEtudiant().getId() == null
-                || note.getCours() == null || note.getCours().getId() == null) {
-            redirectAttributes.addFlashAttribute("errorMessage", "Note incomplète : étudiant ou cours manquant.");
-            return "redirect:/professeur/notes/" + (note.getCours() != null ? note.getCours().getId() : "");
+
+        Etudiant etudiant = noteService.findEtudiantById(etudiantId)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid etudiant Id:" + etudiantId));
+        Cours cours = coursService.getCoursById(coursId)
+            .orElseThrow(() -> new IllegalArgumentException("Invalid cours Id:" + coursId));
+
+        if (cours.getAnneeSection() == null) {
+            redirectAttributes.addFlashAttribute("errorMessage", "Le cours n'est associé à aucune année de section.");
+            return "redirect:/professeur/notes/" + coursId;
         }
+
+        // InscriptionService is now directly injected
+        Inscription inscription = inscriptionService.getInscriptionByEtudiantAndAnneeSection(etudiant, cours.getAnneeSection())
+            .orElseThrow(() -> {
+                // Or handle this by creating an inscription if that's the business logic
+                redirectAttributes.addFlashAttribute("errorMessage", "L'étudiant n'est pas inscrit à l'année/section de ce cours.");
+                return new IllegalStateException("Inscription non trouvée pour l'étudiant et l'année/section du cours.");
+            });
+
+
+        Note noteToSave = new Note();
+        noteToSave.setInscription(inscription);
+        noteToSave.setCours(cours);
+        noteToSave.setPremiereSession(premiereSession);
+        noteToSave.setDeuxiemeSession(deuxiemeSession);
 
         try {
-            noteService.createOrUpdateNote(note);
+            // createOrUpdateNote will findExisting or use this new one
+            noteService.createOrUpdateNote(noteToSave);
         } catch (IllegalStateException e) {
             redirectAttributes.addFlashAttribute("errorMessage", e.getMessage());
-            return "redirect:/professeur/notes/" + note.getCours().getId();
+            return "redirect:/professeur/notes/" + coursId;
         }
 
-        return "redirect:/professeur/notes/" + note.getCours().getId();
+        return "redirect:/professeur/notes/" + coursId;
     }
 
 }

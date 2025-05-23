@@ -22,8 +22,10 @@ public class Section {
     @Transient
     private int placesRestantes; // Champ non stocké en base, mais utilisé pour l'affichage
 
-    @OneToMany(mappedBy = "section")
-    private List<Etudiant> etudiants;
+    // Removed Etudiant list as Etudiant is no longer directly linked to Section.
+    // Students of a section are now found via AnneeSection -> Inscription.
+    // @OneToMany(mappedBy = "section")
+    // private List<Etudiant> etudiants;
 
     @OneToMany(mappedBy = "section")
     private List<AnneeSection> anneeSections;

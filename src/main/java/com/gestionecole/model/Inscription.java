@@ -23,8 +23,8 @@ public class Inscription {
     private Etudiant etudiant;
 
     @ManyToOne
-    @JoinColumn(name = "cours_id")
-    private Cours cours;
+    @JoinColumn(name = "annee_section_id")
+    private AnneeSection anneeSection;
 
     @Override
     public String toString() {

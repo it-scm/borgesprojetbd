@@ -99,14 +99,24 @@ class AuthControllerTest {
         Section section = new Section("Cyber", 30);
         sectionRepository.save(section);
 
+        AnneeSection anneeSection = new AnneeSection("2024-2025", section);
+        anneeSectionRepository.save(anneeSection);
+
         Etudiant etudiant = new Etudiant();
         etudiant.setNom("Etudiant");
         etudiant.setPrenom("Inscrit");
         etudiant.setEmail("etudiant.inscrit@ecole.be");
         etudiant.setPassword(passwordEncoder.encode("etudiant123"));
-        etudiant.setRole("ROLE_ETUDIANT");
-        etudiant.setSection(section);
-        etudiantRepository.save(etudiant);
+        etudiant.setRole(Roles.ETUDIANT); // Use Roles enum if available, or "ROLE_ETUDIANT"
+        // etudiant.setSection(section); // Removed
+        etudiantRepository.save(etudiant); // Save Etudiant first to get ID
+
+        Inscription inscription = new Inscription();
+        inscription.setEtudiant(etudiant);
+        inscription.setAnneeSection(anneeSection);
+        inscription.setDateInscription(java.time.LocalDate.now());
+        inscriptionRepository.save(inscription);
+
 
         mockMvc.perform(formLogin("/auth/login")
                         .user("etudiant.inscrit@ecole.be")
@@ -173,6 +183,7 @@ class AuthControllerTest {
 
         Cours cours = new Cours();
         cours.setIntitule("Sécurité Réseau");
+        cours.setAnneeSection(anneeSection); // Cours is now linked to AnneeSection
         coursRepository.save(cours);
 
         Horaire horaire = new Horaire();
@@ -180,7 +191,7 @@ class AuthControllerTest {
         horaire.setHeureDebut("10:00");
         horaire.setHeureFin("12:00");
         horaire.setCours(cours);
-        horaire.setAnneeSection(anneeSection);
+        // horaire.setAnneeSection(anneeSection); // Horaire no longer directly linked to AnneeSection
         horaireRepository.save(horaire);
 
         // Act: Submit registration form
@@ -199,12 +210,26 @@ class AuthControllerTest {
 
         assertThat(saved.getMatricule()).matches("E-\\d{5}");
         assertThat(passwordEncoder.matches("Valjean123", saved.getPassword())).isTrue();
-        assertThat(saved.getSection()).isEqualTo(section);
-        assertThat(saved.getAnneeSection().getAnneeAcademique()).isEqualTo(academicYear);
+        // assertThat(saved.getSection()).isEqualTo(section); // Etudiant no longer has direct section
+        // assertThat(saved.getAnneeSection().getAnneeAcademique()).isEqualTo(academicYear); // Etudiant no longer has direct anneeSection
 
         List<Inscription> inscriptions = inscriptionRepository.findByEtudiant(saved);
         assertThat(inscriptions).hasSize(1);
-        assertThat(inscriptions.get(0).getCours().getIntitule()).isEqualTo("Sécurité Réseau");
+        Inscription studentInscription = inscriptions.get(0);
+        assertThat(studentInscription.getAnneeSection()).isEqualTo(anneeSection);
+        assertThat(studentInscription.getAnneeSection().getSection()).isEqualTo(section);
+        assertThat(studentInscription.getAnneeSection().getAnneeAcademique()).isEqualTo(academicYear);
+
+        // Verify that the course "Sécurité Réseau" is part of the AnneeSection the student is inscribed in.
+        // This requires checking the list of courses associated with the AnneeSection.
+        // For this test, we can assume CoursService or AnneeSection might have a method to list courses,
+        // or we can check if the saved 'cours' has the correct anneeSection.
+        // Here, we check if the 'cours' saved earlier is correctly associated with the 'anneeSection'.
+        Cours registeredCourse = coursRepository.findById(cours.getId()).orElseThrow();
+        assertThat(registeredCourse.getAnneeSection()).isEqualTo(anneeSection);
+        // And ensure this anneeSection is what the student is inscribed to
+        assertThat(studentInscription.getAnneeSection()).isEqualTo(registeredCourse.getAnneeSection());
+
     }
 
 
@@ -237,8 +262,8 @@ class AuthControllerTest {
         etudiant.setEmail("bob.martin@ecole.be");
         etudiant.setPassword(encoder.encode("Pass1234"));
         etudiant.setMatricule("E-10009");
-        etudiant.setRole("ROLE_ETUDIANT");
-        etudiant.setSection(null);
+        etudiant.setRole(Roles.ETUDIANT); // Use Roles enum
+        // etudiant.setSection(null); // Removed
         etudiantRepository.save(etudiant);
 
         String storedHash = etudiantRepository.findByEmail("bob.martin@ecole.be").orElseThrow().getPassword();
@@ -271,17 +296,28 @@ class AuthControllerTest {
     @Test
     void testRegisterEtudiantNoPlacesAvailable() throws Exception {
         // Arrange
+        String academicYear = "2024-2025"; // Define academicYear
         Section section = new Section("Réseaux", 1);
         sectionRepository.save(section);
+
+        AnneeSection anneeSectionForCapacityTest = new AnneeSection(academicYear, section); // Use the same academicYear or a relevant one
+        anneeSectionRepository.save(anneeSectionForCapacityTest);
 
         Etudiant existingEtudiant = new Etudiant();
         existingEtudiant.setNom("John");
         existingEtudiant.setPrenom("Doe");
         existingEtudiant.setEmail("john.doe@ecole.be");
         existingEtudiant.setPassword(passwordEncoder.encode("password"));
-        existingEtudiant.setRole("ROLE_ETUDIANT");
-        existingEtudiant.setSection(section);
+        existingEtudiant.setRole(Roles.ETUDIANT); // Use Roles enum
+        // existingEtudiant.setSection(section); // Removed
         etudiantRepository.save(existingEtudiant);
+
+        // Create an inscription for the existing student to fill the only place in anneeSectionForCapacityTest
+        Inscription existingInscription = new Inscription();
+        existingInscription.setEtudiant(existingEtudiant);
+        existingInscription.setAnneeSection(anneeSectionForCapacityTest);
+        existingInscription.setDateInscription(java.time.LocalDate.now());
+        inscriptionRepository.save(existingInscription);
 
         // Act
         mockMvc.perform(

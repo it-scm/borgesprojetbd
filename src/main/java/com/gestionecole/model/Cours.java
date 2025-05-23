@@ -17,18 +17,23 @@ public class Cours {
     @JoinColumn(name = "professeur_id")
     private Professeur professeur;
 
+    @ManyToOne
+    @JoinColumn(name = "annee_section_id")
+    private AnneeSection anneeSection;
+
     // ✅ SUPPRIMÉ : relation ManyToMany non nécessaire
     // private List<Professeur> professeurs;
 
     public Cours() {
     }
 
-    public Cours(String code, String intitule, int credits, String description, Professeur professeur) {
+    public Cours(String code, String intitule, int credits, String description, Professeur professeur, AnneeSection anneeSection) {
         this.code = code;
         this.intitule = intitule;
         this.credits = credits;
         this.description = description;
         this.professeur = professeur;
+        this.anneeSection = anneeSection;
     }
 
     public Long getId() {
@@ -77,5 +82,13 @@ public class Cours {
 
     public void setProfesseur(Professeur professeur) {
         this.professeur = professeur;
+    }
+
+    public AnneeSection getAnneeSection() {
+        return anneeSection;
+    }
+
+    public void setAnneeSection(AnneeSection anneeSection) {
+        this.anneeSection = anneeSection;
     }
 }

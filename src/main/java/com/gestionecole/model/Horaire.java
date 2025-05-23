@@ -24,8 +24,4 @@ public class Horaire {
     @JoinColumn(name = "cours_id")
     private Cours cours;
 
-    @ManyToOne
-    @JoinColumn(name = "annee_section_id")
-    private AnneeSection anneeSection;
-
 }

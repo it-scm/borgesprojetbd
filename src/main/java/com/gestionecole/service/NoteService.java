@@ -38,11 +38,28 @@ public class NoteService {
     }
 
     public List<Note> getNotesByEtudiant(Etudiant etudiant) {
-        return noteRepository.findByEtudiant(etudiant);
+        return noteRepository.findByInscription_Etudiant(etudiant);
     }
 
-    public Optional<Note> getNoteByEtudiantAndCours(Long etudiantId, Long coursId) {
-        return noteRepository.findByEtudiant_IdAndCours_Id(etudiantId, coursId);
+    // New method to find Note by Etudiant and Cours, abstracting away Inscription lookup for the controller
+    public Optional<Note> getNoteByEtudiantAndCours(Etudiant etudiant, Cours cours) {
+        if (etudiant == null || cours == null || cours.getAnneeSection() == null) {
+            return Optional.empty();
+        }
+        Optional<Inscription> inscriptionOpt = inscriptionService.getInscriptionByEtudiantAndAnneeSection(etudiant, cours.getAnneeSection());
+        if (inscriptionOpt.isPresent()) {
+            return noteRepository.findByInscription_IdAndCours_Id(inscriptionOpt.get().getId(), cours.getId());
+        }
+        return Optional.empty();
+    }
+
+    // Existing method, useful when inscriptionId is known
+    public Optional<Note> getNoteByInscriptionAndCours(Long inscriptionId, Long coursId) {
+        return noteRepository.findByInscription_IdAndCours_Id(inscriptionId, coursId);
+    }
+
+    public List<Note> getNotesByInscriptionId(Long inscriptionId) {
+        return noteRepository.findByInscription_Id(inscriptionId);
     }
 
     public List<Note> getNotesByCours(Cours cours) {
@@ -59,9 +76,13 @@ public class NoteService {
     }
 
     public List<Etudiant> getEtudiantsInscritsAuCours(Cours cours) {
-        return inscriptionService.getInscriptionsByCours(cours)
+        if (cours.getAnneeSection() == null) {
+            return List.of(); // Or throw an exception, a course should belong to an AnneeSection
+        }
+        return inscriptionService.getInscriptionsByAnneeSection(cours.getAnneeSection())
                 .stream()
                 .map(Inscription::getEtudiant)
+                .distinct() // Avoid duplicate students if multiple inscriptions for same student in an anneeSection (should not happen with current model)
                 .collect(Collectors.toList());
     }
 
@@ -75,14 +96,21 @@ public class NoteService {
 
     @Transactional
     public void createOrUpdateNote(Note note) {
-        Long etudiantId = note.getEtudiant().getId();
+        if (note.getInscription() == null || note.getInscription().getId() == null) {
+            throw new IllegalArgumentException("Inscription ID must be provided to create or update a note.");
+        }
+        if (note.getCours() == null || note.getCours().getId() == null) {
+            throw new IllegalArgumentException("Cours ID must be provided to create or update a note.");
+        }
+
+        Long inscriptionId = note.getInscription().getId();
         Long coursId = note.getCours().getId();
 
-        Optional<Note> existingNoteOpt = noteRepository.findByEtudiant_IdAndCours_Id(etudiantId, coursId);
+        Optional<Note> existingNoteOpt = noteRepository.findByInscription_IdAndCours_Id(inscriptionId, coursId);
 
         Note noteToSave = existingNoteOpt.orElseGet(() -> {
             Note newNote = new Note();
-            newNote.setEtudiant(note.getEtudiant());
+            newNote.setInscription(note.getInscription());
             newNote.setCours(note.getCours());
             return newNote;
         });

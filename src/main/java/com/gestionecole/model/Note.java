@@ -8,7 +8,7 @@ import lombok.Setter;
 @Entity
 @Table(
         name = "note",
-        uniqueConstraints = @UniqueConstraint(columnNames = {"etudiant_id", "cours_id"})
+        uniqueConstraints = @UniqueConstraint(columnNames = {"inscription_id", "cours_id"})
 )
 @Getter
 @Setter
@@ -19,8 +19,8 @@ public class Note {
     private Long id;
 
     @ManyToOne
-    @JoinColumn(name = "etudiant_id", nullable = false)
-    private Etudiant etudiant;
+    @JoinColumn(name = "inscription_id", nullable = false)
+    private Inscription inscription;
 
     @ManyToOne
     @JoinColumn(name = "cours_id", nullable = false)

@@ -57,7 +57,8 @@ public class AuthController {
         }
 
         try {
-            etudiantService.registerStudent(formEtudiant, sectionId);
+            String currentAcademicYear = etudiantService.getCurrentAcademicYear();
+            etudiantService.registerStudent(formEtudiant, sectionId, currentAcademicYear);
         } catch (IllegalStateException e) {
             model.addAttribute("sections", sectionService.findAllSectionsWithRemainingPlaces());
             model.addAttribute("sectionError", e.getMessage());

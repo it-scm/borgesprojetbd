@@ -6,6 +6,7 @@ import com.gestionecole.service.InscriptionService;
 import com.gestionecole.service.NoteService;
 import org.springframework.security.core.Authentication;
 import org.springframework.security.core.context.SecurityContextHolder;
+import java.util.List; // Added import
 import org.springframework.stereotype.Controller;
 import org.springframework.ui.Model;
 import org.springframework.web.bind.annotation.GetMapping;
@@ -40,13 +41,21 @@ public class EtudiantController {
     public String voirHoraire(Model model) {
         String email = getCurrentUserEmail();
         etudiantService.getEtudiantByEmail(email).ifPresent(etudiant -> {
-            if (etudiant.getAnneeSection() != null && etudiant.getAnneeSection().getSection() != null) {
-                model.addAttribute("horaires", horaireService.getHoraireBySectionAndAnnee(
-                        etudiant.getAnneeSection().getSection().getNom(),
-                        etudiant.getAnneeSection().getAnneeAcademique()
-                ));
+            List<com.gestionecole.model.Inscription> inscriptions = inscriptionService.getInscriptionsByEtudiant(etudiant);
+            if (!inscriptions.isEmpty()) {
+                // Assuming the first inscription is the relevant one for the current context.
+                // More sophisticated logic might be needed to pick the "current" AnneeSection if a student has multiple.
+                com.gestionecole.model.AnneeSection anneeSection = inscriptions.get(0).getAnneeSection();
+                if (anneeSection != null && anneeSection.getSection() != null) {
+                    model.addAttribute("horaires", horaireService.getHoraireBySectionAndAnnee(
+                            anneeSection.getSection().getNom(),
+                            anneeSection.getAnneeAcademique()
+                    ));
+                } else {
+                    model.addAttribute("horaires", java.util.Collections.emptyList());
+                }
             } else {
-                model.addAttribute("horaires", null); // or empty list if you prefer
+                model.addAttribute("horaires", java.util.Collections.emptyList()); // No inscriptions, so no horaires
             }
         });
         return "etudiant/horaire";

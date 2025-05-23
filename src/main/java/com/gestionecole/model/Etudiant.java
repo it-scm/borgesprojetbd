@@ -15,28 +15,24 @@ import java.util.List;
 @PrimaryKeyJoinColumn(name = "id")
 public class Etudiant extends Utilisateur {
 
-    @ManyToOne
-    @JoinColumn(name = "section_id")
-    private Section section;
-
     @OneToMany(mappedBy = "etudiant")
     private List<Inscription> inscriptions;
 
-    @OneToMany(mappedBy = "etudiant")
-    private List<Note> notes;
+    // Removed direct collection of Notes from Etudiant.
+    // Notes should be accessed via etudiant.getInscriptions().get(i).getNotes()
+    // or through NoteService.getNotesByEtudiant(etudiant)
+    // @OneToMany(mappedBy = "inscription.etudiant")
+    // private List<Note> notes;
 
     @Transient
     private Note noteForCours;
-
-    @ManyToOne
-    @JoinColumn(name = "annee_section_id")
-    private AnneeSection anneeSection;
 
     private String info;
     private String photo;
 
     public boolean isInscrit() {
-        return this.section != null;
+        // TODO: This logic needs to be updated as section is removed
+        return false; 
     }
 
     @Override

@@ -9,5 +9,6 @@ import java.util.Optional;
 
 @Repository
 public interface AnneeSectionRepository extends JpaRepository<AnneeSection, Long> {
-    Optional<AnneeSection> findByAnneeAcademiqueAndSection(String s, Section section);
+    Optional<AnneeSection> findByAnneeAcademiqueAndSection(String anneeAcademique, Section section);
+    Optional<AnneeSection> findByAnneeAcademiqueAndSection_Id(String anneeAcademique, Long sectionId); // Changed method name to follow convention
 }

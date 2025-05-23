@@ -9,7 +9,8 @@ import java.util.List;
 import java.util.Optional;
 
 public interface NoteRepository extends JpaRepository<Note, Long> {
-    List<Note> findByEtudiant(Etudiant etudiant);
-    Optional<Note> findByEtudiant_IdAndCours_Id(Long etudiantId, Long coursId);
-    List<Note> findByCours(Cours cours); // ✅ ligne à ajouter
+    List<Note> findByInscription_Etudiant(Etudiant etudiant); // Changed from findByEtudiant
+    Optional<Note> findByInscription_IdAndCours_Id(Long inscriptionId, Long coursId); // Changed from findByEtudiant_IdAndCours_Id
+    List<Note> findByCours(Cours cours);
+    List<Note> findByInscription_Id(Long inscriptionId); // Added for convenience
 }

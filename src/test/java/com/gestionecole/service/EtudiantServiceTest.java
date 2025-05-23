@@ -40,15 +40,21 @@ class EtudiantServiceTest {
 
         Cours cours = new Cours();
         cours.setIntitule("Java avancé");
+        cours.setAnneeSection(anneeSection); // Link Cours to AnneeSection
         coursRepository.save(cours);
 
-        Horaire horaire = new Horaire();
-        horaire.setJour("LUNDI");
-        horaire.setHeureDebut("08:00");
-        horaire.setHeureFin("10:00");
-        horaire.setCours(cours);
-        horaire.setAnneeSection(anneeSection);
-        horaireRepository.save(horaire);
+        // Horaire is linked to Cours, not directly to AnneeSection anymore
+        // The test setup for Horaire might not be strictly necessary for testing student registration's
+        // automatic inscription to an AnneeSection, but if it were for testing course-specific notes via Horaire,
+        // it would need to be linked to the 'cours' that is part of 'anneeSection'.
+        // For now, the Horaire setup related to automatic course enrollment via Horaire in EtudiantService
+        // was commented out/removed, so this specific Horaire setup might be less relevant for this test's core assertions.
+        // Horaire horaire = new Horaire();
+        // horaire.setJour("LUNDI");
+        // horaire.setHeureDebut("08:00");
+        // horaire.setHeureFin("10:00");
+        // horaire.setCours(cours);
+        // horaireRepository.save(horaire);
 
         Etudiant etudiant = new Etudiant();
         etudiant.setNom("Alice");
@@ -57,18 +63,31 @@ class EtudiantServiceTest {
         etudiant.setPassword("pass123");
 
         // Act
-        etudiantService.registerStudent(etudiant, section.getId());
+        etudiantService.registerStudent(etudiant, section.getId(), academicYear); // Pass academicYear
 
         // Assert
         Etudiant saved = etudiantRepository.findByEmail("alice.durand@ecole.be").orElseThrow();
 
         assertThat(saved.getMatricule()).matches("E-\\d{5}");
-        assertThat(saved.getSection()).isEqualTo(section);
-        assertThat(saved.getAnneeSection()).isEqualTo(anneeSection);
         assertThat(passwordEncoder.matches("pass123", saved.getPassword())).isTrue();
 
         List<Inscription> inscriptions = inscriptionRepository.findByEtudiant(saved);
-        assertThat(inscriptions).hasSize(1);
-        assertThat(inscriptions.getFirst().getCours().getIntitule()).isEqualTo("Java avancé");
+        assertThat(inscriptions).hasSize(1); // Student should have one inscription
+        Inscription studentInscription = inscriptions.get(0);
+        assertThat(studentInscription.getAnneeSection()).isEqualTo(anneeSection);
+        assertThat(studentInscription.getAnneeSection().getSection()).isEqualTo(section);
+        assertThat(studentInscription.getAnneeSection().getAnneeAcademique()).isEqualTo(academicYear);
+
+        // The automatic course enrollment logic in EtudiantService.registerStudent was removed/commented out.
+        // That logic previously created Inscription records for each Cours in the Horaire for the AnneeSection.
+        // Now, an Etudiant is simply inscribed to an AnneeSection.
+        // To verify the student is "enrolled" in "Java avancé", we'd check if "Java avancé"
+        // is one of the courses offered in the 'anneeSection' they are inscribed in.
+        // For this test, we already linked 'cours' ("Java avancé") to 'anneeSection'.
+        // So, the student is inscribed to an AnneeSection that contains this course.
+        boolean isCourseInAnneeSection = coursRepository.findByAnneeSection_Id(anneeSection.getId()) // Corrected method name
+                                            .stream()
+                                            .anyMatch(c -> c.getIntitule().equals("Java avancé"));
+        assertThat(isCourseInAnneeSection).isTrue();
     }
 }

@@ -10,4 +10,5 @@ import java.util.List;
 @Repository
 public interface CoursRepository extends JpaRepository<Cours, Long> {
     List<Cours> findByProfesseur(Professeur professeur);
+    List<Cours> findByAnneeSection_Id(Long anneeSectionId); // Added method
 }

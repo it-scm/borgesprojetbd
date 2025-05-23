@@ -31,12 +31,32 @@ public class InscriptionService {
         return inscriptionRepository.findByEtudiant(etudiant);
     }
 
-    public List<Inscription> getInscriptionsByCours(Cours cours) {
-        return inscriptionRepository.findByCours(cours);
+    public List<Inscription> getInscriptionsByAnneeSection(com.gestionecole.model.AnneeSection anneeSection) {
+        return inscriptionRepository.findByAnneeSection(anneeSection);
     }
 
-    public boolean isEtudiantInscritAuCours(Etudiant etudiant, Cours cours) {
-        return inscriptionRepository.existsByEtudiantAndCours(etudiant, cours);
+    public Optional<Inscription> getInscriptionByEtudiantAndAnneeSection(Etudiant etudiant, com.gestionecole.model.AnneeSection anneeSection) {
+        if (etudiant == null || anneeSection == null) {
+            return Optional.empty();
+        }
+        // Assuming a student has at most one inscription per AnneeSection.
+        // If multiple are possible, this logic needs refinement (e.g., find active one).
+        return inscriptionRepository.findByEtudiantAndAnneeSection(etudiant, anneeSection);
+    }
+
+    // Replaced isEtudiantInscritAuCours with isEtudiantEnrolledInCourse
+    // This new method will check if the student is inscribed in an AnneeSection that contains the given course.
+    public boolean isEtudiantEnrolledInCourse(Etudiant etudiant, Cours cours) {
+        List<Inscription> inscriptions = inscriptionRepository.findByEtudiant(etudiant);
+        if (cours.getAnneeSection() == null) { // Course must be associated with an AnneeSection
+            return false;
+        }
+        for (Inscription inscription : inscriptions) {
+            if (inscription.getAnneeSection().equals(cours.getAnneeSection())) {
+                return true; // Student is in an AnneeSection that matches the course's AnneeSection
+            }
+        }
+        return false;
     }
 
     @Transactional

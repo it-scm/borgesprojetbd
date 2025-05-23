@@ -1,10 +1,13 @@
 package com.gestionecole.service;
 
+import com.gestionecole.model.AnneeSection;
 import com.gestionecole.model.Section;
-import com.gestionecole.repository.EtudiantRepository;
+import com.gestionecole.repository.AnneeSectionRepository;
+import com.gestionecole.repository.InscriptionRepository;
 import com.gestionecole.repository.SectionRepository;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
 import java.util.List;
 import java.util.Optional;
 
@@ -12,11 +15,21 @@ import java.util.Optional;
 public class SectionService {
 
     private final SectionRepository sectionRepository;
-    private final EtudiantRepository etudiantRepository;
+    private final AnneeSectionRepository anneeSectionRepository;
+    private final InscriptionRepository inscriptionRepository;
 
-    public SectionService(SectionRepository sectionRepository, EtudiantRepository etudiantRepository) {
+    public SectionService(SectionRepository sectionRepository,
+                          AnneeSectionRepository anneeSectionRepository,
+                          InscriptionRepository inscriptionRepository) {
         this.sectionRepository = sectionRepository;
-        this.etudiantRepository = etudiantRepository;
+        this.anneeSectionRepository = anneeSectionRepository;
+        this.inscriptionRepository = inscriptionRepository;
+    }
+
+    private String getCurrentAcademicYear() {
+        LocalDate today = LocalDate.now();
+        int year = today.getMonthValue() >= 9 ? today.getYear() : today.getYear() - 1;
+        return year + "-" + (year + 1);
     }
 
     public List<Section> getAllSections() {
@@ -41,9 +54,19 @@ public class SectionService {
 
     public List<Section> findAllSectionsWithRemainingPlaces() {
         List<Section> sections = sectionRepository.findAll();
+        String currentAcademicYear = getCurrentAcademicYear();
+
         for (Section section : sections) {
-            int nbInscrits = etudiantRepository.countBySectionId(section.getId());
-            section.setPlacesRestantes(section.getNbPlaces() - nbInscrits);
+            Optional<AnneeSection> anneeSectionOpt = anneeSectionRepository
+                .findByAnneeAcademiqueAndSection_Id(currentAcademicYear, section.getId());
+
+            if (anneeSectionOpt.isPresent()) {
+                long nbInscrits = inscriptionRepository.countByAnneeSectionId(anneeSectionOpt.get().getId());
+                section.setPlacesRestantes((int) (section.getNbPlaces() - nbInscrits));
+            } else {
+                // If no AnneeSection for current year, assume all places are available
+                section.setPlacesRestantes(section.getNbPlaces());
+            }
         }
         return sections;
     }
